@@ -14,7 +14,7 @@ import numpy as np;
 #it hase the following attributes
 #left, right: the left and right parents of the node
 #parent: the parent of the node
-#cost: the cost associated to the route that leads to that node (e.g. if the node is the path described by a route that covers t1,t3,t4, it will contain the cost associated to that route)
+#cost: the cost associated to the route that leads to that node(e.g. if the node is the path described by a route that covers t1,t3,t4, it will contain the cost associated to that route)
 #height: the height of the node in the tree
 #isLeaf: it is used to see if the node is a leaf
 class Node(object):

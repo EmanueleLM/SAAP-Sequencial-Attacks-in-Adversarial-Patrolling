@@ -40,6 +40,21 @@ class Vertex(object):
     #return the list of adjacent vertices
     def getAdjacents(self):
         return self.adjacents;
+    #set if the vertex is a target
+    def setTarget(self, is_target):
+        self.is_target = is_target;
+    #set the target value: at most it is 1, if it's not a target, it's zero
+    def setValue(self, value):
+        if self.isTarget():
+            self.value = min(1, value);
+        else:
+            self.value = 0;
+    #set the vertex deadline
+    def setDeadline(self, deadline):
+        if self.isTarget():
+            self.deadline = max(0, deadline);
+        else:
+            self.deadline = 0;
     def printAdjacents(self):
         print("Vertex "+ str(self.vertex_number) + " is adjacent to:\n"
                 + str(self.getAdjacents()));
@@ -60,7 +75,7 @@ class Graph(object):
         for v in vertices:
             self.vertices = np.append(self.vertices, v);
             v.setVertexNumber(len(self.vertices)-1);
-    #return the vertex by it's number
+    #return the vertex by its number
     def getVertex(self, indexnumber):
         if indexnumber <= len(self.vertices):
             return self.vertices[indexnumber];
@@ -100,7 +115,7 @@ class Graph(object):
                 else:
                     A[i.vertex_number][j] = inf;
         return A;
-    #function that returns all the target in G
+    #function that returns all the targets indices in G
     def getTargets(self):
         T = np.array([]);
         for v in self.getVertices():

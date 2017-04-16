@@ -25,14 +25,12 @@ import shortestpath as sp
 #the set of targets as a list of numbers (the index number of each target is under attack on G)
 #the function returns the covering routes calculated from node v
 def computeCovSet(G, v, targets):
-    utility = 0;
     targets.sort(); #order the targets by their index_number (we use the same order in the btree)
     btree = bt.BTree(); #create an aempty binary tree 
     n=len(G.getVertices());#calculate the size of the sp matrix
     SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n)[1]);
     btree.getShortestPaths(SP_cost);#get the sp matrix available to the btree
     if v in [t.getVertexNumber() for t in targets] and v.isTarget(): #if v is a target, it has been yet covered by D at the beginning of the game
-        utility += v.getValue();#if the starting position of the Defender is a target under attack, it is covered immediatly at the beginning of the game
         btree.update(v.getVertexNumber(),targets, btree.root, bt.binaryVectorFromRoute(v,targets),v.getVertexNumber());#create the first element in the tree
     r0 = list([v]);#the initial route is the one that will be expanded at the beginning
     C = list([r0,0]);#its cost is zero and contains just the initial vertex

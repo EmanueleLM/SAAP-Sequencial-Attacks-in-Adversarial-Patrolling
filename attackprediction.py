@@ -20,10 +20,15 @@ def AttackPrediction2(G, v, t, j):
     G_temp = G; #use a temporary version of the graph in order to modify its components
     vertex = G_temp.getVertex(v);
     vertex.setDeadline(vertex.getDeadline()-j);#update first target's deadline
+    R_best = list();
+    U_best = 0;
     for t1 in G_temp.getTargets():
         if t1 != t:
             R,U = ccs.computecovsets(G_temp, vertex, [t,t1]);
-    return [rcmin,umin]#<--argmin(i)Uimin(i)Ui ..to be completed
+            if U > U_best: #consider just the best route and its utility
+                U_best = U;
+                R_best = R;
+    return [R_best,U_best]#return the best route in terms of utility, and the relative utility
  
 # Attack Prediction for k>2 sequencial attacks
 # G is the graph as set of vertices

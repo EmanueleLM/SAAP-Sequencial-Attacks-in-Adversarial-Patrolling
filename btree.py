@@ -81,7 +81,7 @@ class BTree(object):
     #if the target is not covered, just create a new tree on the right where the new cost is
     #the provious cost of the route (a general case of stand still for D wrt a target)
     #oldroute is the non-ordered route, used to calculate its cost (which is dependent on the targets' order obviously)
-    def update(self, route, targets,node,v,oldroute):
+    def update(self, route, targets, node, v, oldroute):
         #print(targets[0]);
         #print(route[0]);
         if self.root is None: #if the tree is empty, create the first node
@@ -116,7 +116,7 @@ class BTree(object):
 #target in T[i] is covered by r, 0 otherwise.
 #take as input the route r and the targets T in topological order (wrt Vertex.vertex_number)
 #returns the binary vector v as defined above
-def binaryVectorFromRoute(r,T):
+def binaryVectorFromRoute(r, T):
     i=0;
     r = np.sort(r);
     T = np.sort(T);

@@ -31,15 +31,14 @@ def computeCovSet(G, v, targets):
     SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n)[1]);
     btree.getShortestPaths(SP_cost);#get the sp matrix available to the btree
     if v in [t.getVertexNumber() for t in targets] and v.isTarget(): #if v is a target, it has been yet covered by D at the beginning of the game
-        btree.update(v.getVertexNumber(),targets, btree.root, bt.binaryVectorFromRoute(v,targets),v.getVertexNumber());#create the first element in the tree
-    r0 = list([v]);#the initial route is the one that will be expanded at the beginning
-    C = list([r0,0]);#its cost is zero and contains just the initial vertex
+        btree.update(v.getVertexNumber(), targets, btree.root, bt.binaryVectorFromRoute(v,targets), v.getVertexNumber());#create the first element in the tree
+    C = list([[np.array([v]),0]]);#the initial route is the one that will be expanded at the beginning.its cost is zero and contains just the initial vertex
     for i in range(len(targets)):
         for t in targets:
             for q in C:
                 Q = list([]);#vector that will contain temporary route+expansions for a given q
                 W = list([]); #vector with all the feasible expansions for q
-                cost = q[1] + SP_cost[t.getVertexNumber()][q[0][-1]]; #the cost of the route is the older cost plus the cost of the shortest path between the new target and the last elemente in the route (i.e. [-1])
+                cost = q[1] + SP_cost[t][q[0][-1]]; #the cost of the route is the older cost plus the cost of the shortest path between the new target and the last elemente in the route (i.e. [-1])
                 #see if we satisfy the three conditions in order to extend a route (see comments at teh beginning)
                 for t1 in targets:    
                     condition1 = (t1 not in q[0]);#we don't choose a target already covered by the route q selected at this step
@@ -53,9 +52,9 @@ def computeCovSet(G, v, targets):
                         W.append(t1); #legal and feasible expansions for current route q
                 for w in W: #for all expansions, see if they are better than the current one (using a B-Tree)
                             # if so, subsistute them 
-                    Q.append([np.append(q[0],w),[cost]]);
-                    U = btree.search(Q[-1][1],Q[-1][0]);
+                    Q.append([np.append(q[0],w),cost]);
+                    U = btree.search(Q[-1][1],bt.purgeBinaryVector(Q[-1][0]));
                     if U: #just take the depth of the tree where the nodes goes to the right(r contains the target)
-                        C.append([[list([q[0],w])],[cost]]);
+                        C.append([np.append(q[0],w),cost]);
                         btree.update(C[-1][0],targets,btree.root,C[-1][0]);#update the tree (maybe its better to do it in the search function?)
     return C;

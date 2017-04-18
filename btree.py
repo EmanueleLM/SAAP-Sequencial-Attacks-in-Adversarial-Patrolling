@@ -114,7 +114,7 @@ class BTree(object):
                 
 #transform a route into a binary vector where each entry v[i] is 1 if the corresponding
 #target in T[i] is covered by r, 0 otherwise.
-#take as input the route r and the targets T in topological order (wrt Vertex.vertex_number)
+#take as input the route r (which is a vector!) and the targets T in topological order (wrt Vertex.vertex_number)
 #returns the binary vector v as defined above
 def binaryVectorFromRoute(r, T):
     i=0;

@@ -18,16 +18,17 @@ import computecovsets as ccs
 # v is the vertex in G where D is placed at time j
 # t is the target chosen as first target under attack by A
 # j is the time at which A launch its last resource on target t
+# return the best route in terms of utility, and the relative utility
 def AttackPrediction2(G, v, t, j):
     G_temp = cp.deepcopy(G); #use a temporary version of the graph in order to modify its components
     vertex = G_temp.getVertex(t);
     vertex.setDeadline(vertex.getDeadline()-j);#update first target's deadline
-    R_best = list();
-    U_best = 0;
+    R_best = list(); #best route found out in this way
+    U_best = 2; #utility associated to the best route, we need it to be 2 initially
     for t1 in G_temp.getTargets():
         if t1 != t:
-            R,U = ccs.computecovsets(G_temp, v, [t,t1]);
-            if U > U_best: #consider just the best route and its utility
+            R,U = ccs.computecovsets(G_temp, v, [t,t1]);#MODIFY IT, WE NEED SOLVESRG() NOT COMPUTECOVSETS()
+            if U <= U_best: #consider just the route/utility associated to the worst case scenario's attack by A
                 U_best = U;
                 R_best = R;
     return [R_best,U_best]#return the best route in terms of utility, and the relative utility
@@ -43,11 +44,11 @@ def AttackPrediction(G, v, T, j):
         target = G_temp.getVertex(t);
         target.setDeadline(target.getDeadline()-j);#update target's deadline
     R_best = list();
-    U_best = 0;
+    U_best = len(T)+1;
     for t1 in G_temp.getTargets():
         if t1 != t:
-            R,U = ccs.computecovsets(G_temp, v, np.append(T,t1));
-            if U > U_best: #consider just the best route and its utility
+            R,U = ccs.computecovsets(G_temp, v, np.append(T,t1));#MODIFY IT, WE NEED SOLVESRG() NOT COMPUTECOVSETS()
+            if U <= U_best: #consider just the best route and its utility
                 U_best = U;
                 R_best = R;
     return [R_best,U_best]#return the best route in terms of utility, and the relative utility

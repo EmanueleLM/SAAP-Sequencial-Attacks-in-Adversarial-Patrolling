@@ -21,21 +21,21 @@ import shortestpath as sp
 #the graph G on which the game is played (please note that if you want to calculate the best covering route)
 #on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
 #the function computecovsets
-#the vertex v as a number (indexnumber of v on G)
-#the set of targets as a list of numbers (the index number of each target is under attack on G)
+#the vertex v as a positive integer (indexnumber of v on G)
+#the set of targets as a list of numbers (the index number of each target is under attack on G) even if there's just one target, pass it as a list (i.e. [])
 #the function returns the covering routes calculated from node v
 def computeCovSet(G, v, targets):
-    targets.sort(); #order the targets by their index_number (we use the same order in the btree)
+    targets = np.sort(targets); #order the targets by their index_number (we use the same order in the btree)
     btree = bt.BTree(); #create an aempty binary tree 
     n=len(G.getVertices());#calculate the size of the sp matrix
     SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n)[1]);
     btree.getShortestPaths(SP_cost);#get the sp matrix available to the btree
-    if v in [t.getVertexNumber() for t in targets] and v.isTarget(): #if v is a target, it has been yet covered by D at the beginning of the game
-        btree.update(v.getVertexNumber(), targets, btree.root, bt.binaryVectorFromRoute(v,targets), v.getVertexNumber());#create the first element in the tree
+    if v in targets and G.getVertex(v).isTarget(): #if v is a target, it has been yet covered by D at the beginning of the game
+        btree.update([v], targets, btree.root, bt.binaryVectorFromRoute([v],targets), [v]);#create the first element in the tree
     C = list([[np.array([v]),0]]);#the initial route is the one that will be expanded at the beginning.its cost is zero and contains just the initial vertex
     for i in range(len(targets)):
         for t in targets:
-            for q in C:
+            for q in [c for c in C if len(c[0])==i+1]: #with one-line python we consider just the routes expanded at time i-1 (we use their lenght as "watermark")
                 Q = list([]);#vector that will contain temporary route+expansions for a given q
                 W = list([]); #vector with all the feasible expansions for q
                 cost = q[1] + SP_cost[t][q[0][-1]]; #the cost of the route is the older cost plus the cost of the shortest path between the new target and the last elemente in the route (i.e. [-1])

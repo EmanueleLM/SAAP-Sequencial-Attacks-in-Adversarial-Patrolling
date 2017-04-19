@@ -13,7 +13,13 @@ import numpy as np
 
 inf = 999; #if an arc has this weight, it means that two nodes are not connected on G
 
-#class Vertex that defines the kind of vertices on graph G
+#class Vertex that defines the vertices on graph G
+#we distinguish between targets and non-targets
+# each Vertex has the following attributes
+# is_target that is True if the vertex is a target on G (False, otherwise)
+# value which is the value of the target (between 0 and 1, 0 if it's not a target, 1 at most if it's a target)
+# deadline which is the deadline associated to each vertex on G (it becomes at most -1 for expired targets)
+# adjacents which is a list of all the indices of vertices that are neighbors of the aformentioned vertex
 class Vertex(object):
     vertex_number = -1; #this number must be unique for each vertex
     #initialize the object "vertex" by defyining its attributes
@@ -35,7 +41,7 @@ class Vertex(object):
     def getValue(self):
         return self.value;
     #return the deadline associated to the vertex (0 if the target is expired or if it's a non--target vertex)
-    def getDedaline(self):
+    def getDeadline(self):
         return self.deadline;
     #return the list of adjacent vertices
     def getAdjacents(self):
@@ -52,7 +58,7 @@ class Vertex(object):
     #set the vertex deadline
     def setDeadline(self, deadline):
         if self.isTarget():
-            self.deadline = max(0, deadline);
+            self.deadline = max(-1, deadline);#we can't put it to max(0,deadline), 'cause if D is on a target and the deadline is 0, the target is protected, even if it has been expired from ages
         else:
             self.deadline = 0;
     def printAdjacents(self):
@@ -68,7 +74,9 @@ class Vertex(object):
     def __iter__(self):
         return self;
         
-#class Graph that defines a graph as a set of vertices and edges           
+#class Graph that defines a graph as a set of vertices and edges       
+#it has the following attributes:
+# vertices which is the complete list of vertices on G 
 class Graph(object):
     vertices = np.array([]);
     def __init__(self, vertices):
@@ -125,23 +133,23 @@ class Graph(object):
         
  
 """
-Little testing to see if the algorithms works as expected
+Little testing to see if the algorithms work as expected
 """              
 #create vertices        
 v1 = Vertex(0,0,0);
-v2 = Vertex(1,1,5);
-v3 = Vertex(1,1,10);
-v4 = Vertex(1,1,6);
-v5 = Vertex(0,0,0);
+v2 = Vertex(1,0.5,3);
+v3 = Vertex(1,1,3);
+v4 = Vertex(1,0.6,3);
+v5 = Vertex(1,0.5,3);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
 G = Graph(np.array([v1,v2,v3,v4,v5]));
 
-G.setAdjacents(v1,np.array([1,1,0,0,0]));
-G.setAdjacents(v2,np.array([1,1,1,0,0]));
+G.setAdjacents(v1,np.array([1,0,0,1,1]));
+G.setAdjacents(v2,np.array([0,1,1,1,0]));
 G.setAdjacents(v3,np.array([0,1,1,1,0]));
-G.setAdjacents(v4,np.array([0,0,1,1,0]));
-G.setAdjacents(v5,np.array([0,0,0,0,1]));
+G.setAdjacents(v4,np.array([1,1,1,1,1]));
+G.setAdjacents(v5,np.array([1,0,0,1,1]));
 
 print("\nVertices' adjacencies:");
 v1.printAdjacents();

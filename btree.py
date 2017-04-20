@@ -79,7 +79,7 @@ class BTree(object):
             else:
                 node = node.left;
                 if node is None:
-                    return True;
+                    return False;
         if cost < (node.getCost()):#if the route v is better than one which is present, return True (we should update the tree) 
             node.setCost(cost);
             return True;

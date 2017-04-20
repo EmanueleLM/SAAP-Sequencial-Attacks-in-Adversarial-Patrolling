@@ -135,7 +135,9 @@ class Graph(object):
 """
 Little testing to see if the algorithms work as expected
 """              
-#create vertices        
+#create vertices   
+#please note that in this graph, starting from vertex 0, it is impossible to
+#cover targets 1,4,2 together if a simultaneous attack is performed on all the three targets     
 v1 = Vertex(0,0,0);
 v2 = Vertex(1,0.5,3);
 v3 = Vertex(1,1,3);

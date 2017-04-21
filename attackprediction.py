@@ -25,21 +25,22 @@ def AttackPrediction2(G, v, t, j):
     vertex = G_temp.getVertex(t);
     vertex.setDeadline(vertex.getDeadline()-j);#update first target's deadline
     R_best = list(); #best route found out in this way
-    U_best = -2; #utility associated to the best route, we need it to be 2 initially
-    for t1 in G_temp.getTargets():
+    U_best = 0; #utility associated to the best route, we need it to be -2 initially
+    for t1 in G_temp.getTargets().astype(int):
         U = -2;
         R = list();
         if t1 != t:
             C = ccs.computeCovSet(G_temp, v, np.array([t,t1]));#MODIFY IT, WE NEED SOLVESRG() NOT COMPUTECOVSETS()                    
             for c in C:
-                temp = ccs.getUtilityFromRoute(G_temp, c) - G.getVertex(t).getValue() - G.getVertex(t1).getValue();
-                print(temp)
+                temp= np.around(ccs.getUtilityFromRoute(G_temp, c[0], [t,t1]), decimals=2);#dunno why I need to round this number, numpy wierd approx on certain numbers
+                #print(ccs.getUtilityFromRoute(G_temp, c, [t,t1]), G.getVertex(t).getValue(),G.getVertex(t1).getValue(),c,temp)
                 if temp > U:
                     U = temp;
                     R = c;
-        if U > U_best: #consider just the route/utility associated to the worst case scenario's attack by A
-            U_best = U;
-            R_best = R;
+            print(U,R)
+            if U <= U_best: #consider just the route/utility associated to the worst case scenario's attack by A           
+                U_best = U;
+                R_best = R;
     return [R_best,U_best]#return the best route in terms of utility, and the relative utility
  
 # Attack Prediction for k>2 sequencial attacks
@@ -69,7 +70,7 @@ Little testing to see if the algorithms work as expected
 print("\nStart AttackPrediction Test Part:");          
 #create vertices        
 v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,3);
+v2 = gr.Vertex(1,0.6,3);
 v3 = gr.Vertex(1,1,3);
 v4 = gr.Vertex(1,0.6,3);
 v5 = gr.Vertex(1,0.5,3);

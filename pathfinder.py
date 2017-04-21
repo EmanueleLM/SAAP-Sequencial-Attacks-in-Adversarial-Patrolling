@@ -28,14 +28,8 @@ class RouteExpansion(object):
         self.route_ij = route_ij;
         self.u_ij = u_ij;
     def expandRoute(self, route_si, route_ij, u_ij):
-        if self.route_si is None:
-            self.route_si = np.array([route_si]);
-        else:
-            self.route_si = np.append(self.route_si, route_si);
-        if self.route_ij is None:
-            self.route_ij = np.array([route_ij]);
-        else:
-            self.route_ij = np.append(self.route_ij, route_ij);
+        self.route_si = route_si;
+        self.route_ij = route_ij;
         self.u_ij = u_ij;        
     #getter methods for the class
     def getRoute_si(self):
@@ -80,28 +74,29 @@ def PathFinder2(G, v, t):
     M = np.array([[RouteExpansion(None, None, 0) for i in range(n)] for j in range(n)],dtype=RouteExpansion);
     M[v][0].expandRoute(v, None, G.getVertex(v).getValue());
     M[v][0].printRouteExpansion();
-    for j in range(n-1): #see if the j+1 in the expansion needs j to go till n-1
+    for j in range(n-1): # j+1 at line 93(routes expansion) needs j to go till n-1
+        print("TIME ", j);        
         for i in range(n):
             if M[i][j].isNone():#i.e. the cell M(i,j) is not defined
                 continue;
-            r_c_min, u_min = ap.AttackPrediction2(G, i, t, j);#suppose the last attack while D is on vertex i at time j (the first attack has been performed on t)
-            M[i][j].expandRoute(M[i][j].getRoute_si(), r_c_min, min(u_min, M[i][j].getUtility()));#set the new route (except for the first memeber route_si, that will created based on the worst route that from the adjacent vertices come to the new one)      
+            r_c_min, u_min = ap.AttackPrediction2(G, i, t, j);#suppose the last attack while D is on vertex i at time j (the first attack has been performed on t)          
+            r_c_min = r_c_min[0];#take just the route, not the cost            
+            #print(r_c_min, u_min); #print the expansion           
+            M[i][j].expandRoute(M[i][j].getRoute_si(), r_c_min, min(u_min, M[i][j].getUtility()));#each cell will contain the route_ij which is the route that from i will cover the last target uder attack, and the relative utility 
+            M[i][j].printRouteExpansion();
             #expand all the routes created so far in the new column of the dp matrix j+1            
-            adjacentvertices = np.array(G.getVertex(i).getAdjacents());#put in a list all the adjacent vertices (by their index number)
+            adjacentvertices = np.array(G.getVertex(i).getAdjacents());#put in a list all the adjacent vertices (by their index number)           
             for v1 in adjacentvertices:
-                if M[i][j].getUtility() <=  M[v1.astype(int)][j+1].getUtility():
-                    M[v1.astype(int)][j+1].expandRoute(np.append(M[i][j].getRoute_si(),v1), None, M[i][j].getUtility());        
-    
+                if M[i][j].getUtility() <=  M[v1][j+1].getUtility():
+                    M[v1][j+1].expandRoute(np.append(M[i][j].getRoute_si(),v1), None, M[i][j].getUtility());        
     best_i = best_j = 0;#initialize indices to find the best route in M
     u_star = 0;#initilize the best utility(at the beginning the best route covers anything)
     for i in range(n):
         for j in range(n):
-            if M[i][j].getUtility()>u_star:
+            if M[i][j].getUtility()<u_star:
                 u_star = M[i][j].getUtility();
                 best_i = i;
                 best_j = j;
-    print("the best route is ", M[best_i][best_j].getRoute_ij());
-    print("its utility is ",M[best_i][best_j].getUtility())
     return M[best_i][best_j].getRoute_si,M[best_i][best_j].getRoute_ij(),M[best_i][best_j].getUtility();
  
 #G is the graph on which D and A play the game
@@ -126,10 +121,10 @@ Little testing to see if the algorithms work as expected
 print("\nStart PathFinder Test Part:");          
 #create vertices        
 v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,3);
-v3 = gr.Vertex(1,1,3);
-v4 = gr.Vertex(1,0.6,3);
-v5 = gr.Vertex(1,0.5,3);
+v2 = gr.Vertex(1,0.5,2);
+v3 = gr.Vertex(1,1,2);
+v4 = gr.Vertex(1,0.6,2);
+v5 = gr.Vertex(1,0.5,2);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
 G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
@@ -144,3 +139,5 @@ print(ccs.computeCovSet(G, 0, G.getTargets()));
 
 print("bestroute")
 print(PathFinder2(G, 0, 1)); #when D is on vertex 0, recieves an attack on target 1
+                             #we expect to loose -0.5 since the first attack is on vertex 1, but the best 
+                             #strategy for A is a sim. attack to two targets at the beginning, and D will never cover both of them

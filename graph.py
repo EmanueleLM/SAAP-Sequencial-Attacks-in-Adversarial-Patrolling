@@ -45,7 +45,7 @@ class Vertex(object):
         return self.deadline;
     #return the list of adjacent vertices
     def getAdjacents(self):
-        return self.adjacents;
+        return self.adjacents.astype(int);
     #set if the vertex is a target
     def setTarget(self, is_target):
         self.is_target = is_target;

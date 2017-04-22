@@ -54,7 +54,7 @@ class RouteExpansion(object):
         return (self.route_si is None);
     #function of equivalence
     def __eq__(self, x):
-        return self.getRoute_si==x.route_si and self.getRoute_ij==x.route_ij; #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
+        return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
     #function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.__eq__(x));
@@ -62,6 +62,31 @@ class RouteExpansion(object):
     def __iter__(self):
         return self;
 
+#class that manages the routes expansion when the number of attack is more than 2
+#we use two different classes since we want the code to be distinct between case where k=2, and k>2        
+class RouteExpansion3(RouteExpansion):
+    def __init__(self, route_si, route_ij, u_ij, covered_targets):
+        super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
+        self.covered_targets = covered_targets;
+    def expandRoute(self, route_si, route_ij, u_ij, covered_targets):
+        super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
+        self.covered_targets = covered_targets;
+    def getCoveredTargets(self):
+        return self.covered_targets;
+    def setCoveredTargets(self, covered_targets):
+        self.covered_targets = covered_targets;
+    #function that prints the values of the element RouteExpansion3
+    def printRouteExpansion(self):
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets);
+    def __eq__(self, x):
+        return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets)); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
+    #function for distinguish between two vertices
+    def __ne__(self, x):
+        return not(self.__eq__(x));
+    #make the object iterable in a loop (i.e. for loops)
+    def __iter__(self):
+        return self;
+    
 #PathFinder2 function is the function that returns the equilibrium path in a SRG game with k=2 attacks
 #it takes as input 
 # the graph G
@@ -72,7 +97,7 @@ def PathFinder2(G, v, t):
     n = len(G.getVertices());#number of vertices on G, used to size dp matrix M
     #matrix of dp algorithm, it contains |V| objects of type RouteExpansion, initially set to None
     M = np.array([[RouteExpansion(None, None, 0) for i in range(n)] for j in range(n)],dtype=RouteExpansion);
-    M[v][0].expandRoute(v, None, G.getVertex(v).getValue());
+    M[v][0].expandRoute(v, None, G.getVertex(v).getValue() if v==t else 0);
     M[v][0].printRouteExpansion();
     for j in range(n-1): # j+1 at line 93(routes expansion) needs j to go till n-1
         print("TIME ", j);        
@@ -105,6 +130,10 @@ def PathFinder2(G, v, t):
 #t_covered is the set of targets covered by D when the function is invoked
 #k is the number of resources left to A
 def PathFinder(G, v, t, t_covered, k):
+    n = len(G.getVertices());#number of vertices on G, used to size dp matrix M
+    M = np.array([[[RouteExpansion3(None, None, 0, None) for i in range(n)] for j in range(n)] for l in range(n)],dtype=RouteExpansion);
+    M[v][0][v if v in np.array(t) else 0].expandRoute(v, None, G.getVertex(v).getValue() if v in np.array(t) else 0, v if v in np.array(t) else 0);
+    M[v][0][v if v in np.array(t) else 0].printRouteExpansion();
     """
     for all Tua s.t. len(Tua)=k --> covsets();
     for all Tua s.t. len(Tua)=k-1 --> expand routes; PathFinder(G, v.neighbors(), tUTua, t_covered, 1);
@@ -121,10 +150,10 @@ Little testing to see if the algorithms work as expected
 print("\nStart PathFinder Test Part:");          
 #create vertices        
 v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,2);
-v3 = gr.Vertex(1,1,2);
-v4 = gr.Vertex(1,0.6,2);
-v5 = gr.Vertex(1,0.5,2);
+v2 = gr.Vertex(1,0.5,3);
+v3 = gr.Vertex(1,1,3);
+v4 = gr.Vertex(1,0.6,3);
+v5 = gr.Vertex(1,0.5,3);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
 G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
@@ -138,6 +167,7 @@ G.setAdjacents(v5,np.array([1,0,0,1,1]));
 print(ccs.computeCovSet(G, 0, G.getTargets()));
 
 print("bestroute")
-print(PathFinder2(G, 0, 1)); #when D is on vertex 0, recieves an attack on target 1
+print(PathFinder2(G, 1, 2)); #when D is on vertex 0, recieves an attack on target 1
                              #we expect to loose -0.5 since the first attack is on vertex 1, but the best 
                              #strategy for A is a sim. attack to two targets at the beginning, and D will never cover both of them
+PathFinder(G, 1, [1,2,3,4], 0, 3);

@@ -47,8 +47,9 @@ def AttackPrediction2(G, v, t, j):
 # G is the graph as set of vertices
 # v is the vertex in G where D is placed at time j
 # T is the set of targets previosusly under--attack by A at time i<j
+# k is the number of resources available at the beginning of the game to A
 # j is the time at which A launch its last resource on target t
-def AttackPrediction(G, v, T, j):
+def AttackPrediction(G, v, T, k, j):
     G_temp = cp.deepcopy(G); #use a temporary version of the graph in order to modify its components
     for t in T: #set the deadline on each target previously under attack equal to its deadline minus the time passed till that phase of the game
         target = G_temp.getVertex(t);

@@ -52,6 +52,15 @@ def listToString(l):
         else:
             address += str(l[i])+' '; 
     return address;
+    
+#Function that turns a string of inputs in the format '<number><space><number>..' into a 
+# a list of targets in the form [<number>, <number>,..] which is iterable
+# for example '1 3 4' is turned into an object oft type np.array that contains [1,3,4]
+def stringToList(string):
+    result = np.array([]);
+    for i in  string.split(' '):
+        result = np.append(result, i);
+    return result.astype(int);
 """
 Little testing to see if the algorithms work as expected
 """  
@@ -63,3 +72,4 @@ print(dic['']); #access to the empty element in the list, we expect 0 as output
 print(dic['1 2 4']); #access to the element formed by 2,3 and 4
 print(len(dic)); #number of elements in the dictionary
 print(dic[listToString([1,3,2])]);
+print([x for x in stringToList('1 4 5')]);

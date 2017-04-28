@@ -68,31 +68,43 @@ class RouteExpansion(object):
 #class that manages the routes expansion when the number of attack is more than 2
 #we use two different classes since we want the code to be distinct between case where k=2, and k>2        
 class RouteExpansion3(RouteExpansion):
-    def __init__(self, route_si, route_ij, u_ij, covered_targets, t_under_attack):
+    def __init__(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets;
-        self.t_under_attack = t_under_attack;
-    def expandRoute(self, route_si, route_ij, u_ij, covered_targets, t_under_attack):
+        self.history = list() if history==None else list([history]);
+    def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets;
-        self.t_under_attack = t_under_attack;
+        self.history.append(history);
     def getCoveredTargets(self):
         return self.covered_targets;
-    def getTargetsUnderAttack(self):
-        return self.t_under_attack;
+    def getHistory(self):
+        return self.history;
     def setCoveredTargets(self, covered_targets):
         self.covered_targets = covered_targets;
-    def setTargetsUnderAttack(self, t_under_attack):
-        self.t_under_attack = t_under_attack;
+    def setHistory(self, history):
+        self.history = history;
+    # function that calculates the targets under attack using the history element
+    def getTargetsUnderAttack(self):
+        targets_under_attack = np.array([]);
+        for el in self.history:
+            targets_under_attack = np.append(targets_under_attack,[t for t in el[0]]);
+        return targets_under_attack;
     #function that returns the set of covered targets using the intersection between targets covered so far
     # and targets under attack 
     def calculateCoveredTargets(self):
-        return np.intersect1d(self.covered_targets, self.t_under_attack);
+        return np.intersect1d(self.covered_targets, self.getTargetsUnderAttack());
+    #calculate the expired targets on G, given a route and its history of attacks
+    def calculateExpiredTargets(self, G):
+        expired_targets = np.array();
+        for el in self.history:
+            expired_targets = np.append(expired_targets, [t for t in el[0] if G.getVertex(t).getDeadline()-el[1]<0]);
+        return expired_targets;
     #function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self):
-        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nTargets Under Attack in this scenario: ", self.t_under_attack);
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nTargets Under Attack in this scenario: ", self.getTargetsUnderAttack());
     def __eq__(self, x):
-        return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.t_under_attack), np.sort(x.t_under_attack))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
+        return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
     #function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.__eq__(x));
@@ -105,7 +117,8 @@ class RouteExpansion3(RouteExpansion):
 # the graph G
 # the vertex number v where D is placed when she recieves the first attack
 # the target under attack, t
-#it returns the equilibrium path and the utility associated to that path        
+#it returns:
+# the equilibrium path and the utility associated to that path        
 def PathFinder2(G, v, t):
     n = len(G.getVertices());#number of vertices on G, used to size dp matrix M
     #matrix of dp algorithm, it contains |V| objects of type RouteExpansion, initially set to None
@@ -137,41 +150,76 @@ def PathFinder2(G, v, t):
                 best_i = i;
                 best_j = j;
     return M[best_i][best_j].getRoute_si,M[best_i][best_j].getRoute_ij(),M[best_i][best_j].getUtility();
- 
-#G is the graph on which D and A play the game
-#v is the vertex where D stays when the function is invoked
-#t is the target under attack when the function is invoked
-#k is the number of resources left to A
+    
+#PathFinder function is the function that returns the equilibrium path in a SRG game with k>2 attacks
+#it takes as input:
+# G is the graph on which D and A play the game
+# v is the vertex where D stays when the function is invoked
+# t is the target under attack when the function is invoked
+# k is the number of resources left to A
+#it returns:
+# the equilibrium path and the utility associated to that path 
 def PathFinder(G, v, t, k):
     n = len(G.getVertices()); #number of vertices on G, used to size dp matrix M
-    target_dictionary = td.listToDictionary(G.getTargets(), k+1); #transform the power set into a dictionary
-    print(len(target_dictionary));
-    M = np.array([[[RouteExpansion3(None, None, 0, None, None)  for l in range(len(target_dictionary))] for j in range(n)]for i in range(n) ],dtype=RouteExpansion3);         
-    M[v][0][v if v==t else 0].expandRoute(v, None, G.getVertex(v).getValue() if v in np.array(t) else 0, v if v in np.array(t) else 0, v if v==t else None);   
+    target_dictionary = td.listToDictionary(G.getTargets(), k+1); #transform the list of targets into a power set and then into a dictionary of targets
+    #print(target_dictionary);
+    M = np.array([[[None for l in range(len(target_dictionary))] for j in range(n)]for i in range(n)]);   
+    initial_layer = target_dictionary[td.listToString([v])] if v==t else 0; #initial layer on M where the game begins  
+    M[v][0][initial_layer] = list([RouteExpansion3(v, None, G.getVertex(v).getValue() if v in np.array(t) else 0, v if v==t else None, [[t],0])]);       
+    # TODO: remeber to eliminate the empty route (isNone()==True) when at least a valid route is added to a cell of M[][][]
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]);#put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore
+    #print(stopping_layers);    
     #we 'populate' the matrix M by columns and then with an in-depth approach wrt the third layer l    
     for j in range(n-1):
         for l in range(len(target_dictionary)): #associate to each of the matrix M a set of covered targets over the parts of (|T| k) possible targets with k resources
+            if l in stopping_layers:
+                continue;
             for i in range(n):
-                if M[i][j][l].isNone() or l in stopping_layers: #this one is to prevent routes' expansion when all the targets are covered/expired (we don't expand a M[][][] if it represent the last layer(a layer of cardinality k))
+                if M[i][j][l] is None:
                     continue;
+                for r in M[i][j][l]: #for each route in cell M[i][j][l]
+                    if r.isNone() or r is None: #this one is to prevent routes' expansion when all the targets are covered/expired (we don't expand a M[][][] if it represent the last layer(a layer of cardinality k))
+                        continue;
                 #We suppose from 1 to k-left attacks and we update M accoridng to this fact
                 # we can choose to modify M by passing its column (with all the layers) to AttackPrediction function
                 # or let the function return all the new routes with the respective layer and then modify M
                 #Anyway, we expect that after this passage we have M modified and ready to pass through the 'expand routes' passage
-                for k_left in range(1,k-len(M[i][j][l].getTargetsUnderAttack())+1): #for each cell, for each possible combination of attacks (from 1 to the number of resources left to A) invoke AttackPrediction
-                    # PLEASE REMEBER TO PASS TO AP FUNCTION [[[JUST]]] THE COLUMNS RELATIVE TO THE j UNDER CONSIDERATION (WE DON'T NEED WHOLE THE M MATRIX!)                    
-                    route_expansion, layer = ap.AttackPrediction(G, i, M[i][j][l].getTargetsUnderAttack(), k+1, j);
-                    M[i][j][layer].expandRoute3(route_expansion.getRoute_si(), route_expansion.getRoute_ij(), route_expansion.getUtility(), route_expansion.calculateCoveredTargets(G));#each cell will contain the route_ij which is the route that from i will cover the last target uder attack, the relative utility and the set of covered targets    
+                M = ap.AttackPrediction(G, i, j, l, M, k+1, target_dictionary); #this function calculates directly all the new cells activated on M
+                """ ATTENZIONE A NON CREARE ROTTE E RICHIAMARE SU DI ESSE ATTACKPREDICTION ALTRIMENTI VA AD INFINITO FINO A FINE GIOCO
+                AL PRIMO TURNO!!!"""                
                 # 'expand routes' passage
-                adjacentvertices =  np.array(G.getVertex(i).getAdjacents());    
-                for v1 in adjacentvertices:
-                    if M[i][j][l].getUtility() <= M[v1][j+1][l]:
-                        l_new = target_dictionary[td.listToString(M[i][j][l].getTargetsUnderAttack())];
-                        M[v1][j+1][l_new].expandRoute(np.append(M[i][j].getRoute_si(),v1), None, M[i][j][l].getUtility(),covered_targets, t_under_attack);        
+                # remember that the domination of routes is done in this way: we expand a route if
+                    # the next cells doesnt contain a route whose value is higher(for the defender)
+                    # and the targets under attacks are the same till that time 
+            if l in stopping_layers:
+                continue;
+            for i in range(n):
+                if M[i][j][l] is None:
+                    continue;
+                for r in M[i][j][l]: #for each route in cell M[i][j][l]
+                    if r.isNone() or r is None: #this one is to prevent routes' expansion when all the targets are covered/expired (we don't expand a M[][][] if it represent the last layer(a layer of cardinality k))
+                        continue; 
+                adjacentvertices =  np.array(G.getVertex(i).getAdjacents()); 
+                for r in M[i][j][l]: #for all routes in a given cell M[i][j][l], expand them accoridngly to their respective hisotry (under attacks and/or covered)
+                    if r.isNone() or r is None:
+                        continue;
+                    for v1 in adjacentvertices:
+                        #check all the expired targets and also the covered ones
+                        # diminish all the deadlines of the targets under attack by a time equal to ..ahaha..ok this one is a big trouble
+                        # how (the fuck) do I carry on all the info needed to know the exact deadlines of each target under attack?
+                        #associate a binary matrix (this one could be sparse) that contains the power set of combinations of k targets and a 1 if the
+                        #target is under attack at time zero, 0 otherwise. On the columns we have the power set, on the rows the time j.
+                        #a description is a vector that point to different elements (at most k) on the matrix                    
+                        condition1 = r.getUtility() <= min(r_1.getUtility() for r_1 in M[v1][j+1][l].getElements()); #check out the verse of this inequality!
+                        condition2 = np.array_equal(np.intersect1d(r.getTargetsUnderAttack(), r.getCoveredTargets()), M[v1][j+1][l].getTargetsUnderAttack(), M[v1][j+1][l].getCoveredTargets()); #left condition on third layer if some tareget is expired on the next step!
+                        if condition1 and condition2 : 
+                            #check expired in the next step j+1
+                            expired, utility = r.caluclateExpiredTargets(G, v1, r, j+1); #RETURNS THE TARGETS EXPIRED, WE NEED v1 in order to calculate if moving on a new vertex can save something!
+                            l_new = target_dictionary[td.listToString(r.calculateExpiredTargets(G))]; #new layer on dp matrix M where the route is moved (if some target has expired)
+                            M[v1][j+1][l_new].append(RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, expired, r.getHistory()));        
 
     # extract the utilities of the game
-  
+    # then terminate  
     return;
     
 """
@@ -200,4 +248,4 @@ print("bestroute")
 print(PathFinder2(G, 1, 2)); #when D is on vertex 0, recieves an attack on target 1
                              #we expect to loose -0.5 since the first attack is on vertex 1, but the best 
                              #strategy for A is a sim. attack to two targets at the beginning, and D will never cover both of them
-PathFinder(G, 0, [1,2,3,4], 2);
+PathFinder(G, 0, 2, 2);

@@ -61,6 +61,10 @@ class Vertex(object):
             self.deadline = max(-1, deadline);#we can't put it to max(0,deadline), 'cause if D is on a target and the deadline is 0, the target is protected, even if it has been expired from ages
         else:
             self.deadline = 0;
+    #function that diminishes the deadline of the target of a quantity j
+    def diminishDeadline(self, j):
+        self.deadline -= j;
+    #print the adjacent vertices
     def printAdjacents(self):
         print("Vertex "+ str(self.vertex_number) + " is adjacent to:\n"
                 + str(self.getAdjacents()));
@@ -129,7 +133,7 @@ class Graph(object):
         for v in self.getVertices():
             if v.is_target:
                 T = np.append(T,v.vertex_number);
-        return T;
+        return T.astype(int);
         
  
 """

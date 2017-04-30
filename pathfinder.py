@@ -92,13 +92,36 @@ class RouteExpansion3(RouteExpansion):
         return targets_under_attack;
     #function that returns the set of covered targets using the intersection between targets covered so far
     # and targets under attack 
-    def calculateCoveredTargets(self):
-        return np.intersect1d(self.covered_targets, self.getTargetsUnderAttack());
-    #calculate the expired targets on G, given a route and its history of attacks
-    def calculateExpiredTargets(self, G):
-        expired_targets = np.array();
+    #takes as input:
+    # the graph G
+    # the position v where D is at time j
+    # the time passed j since the beginning of the game
+    #it returns:
+    # the list of covered targets
+    def calculateCoveredTargets(self, G, v, j):
+        covered_targets = np.array();
+        r_new = np.append(self.route_si, v);
         for el in self.history:
-            expired_targets = np.append(expired_targets, [t for t in el[0] if G.getVertex(t).getDeadline()-el[1]<0]);
+            for t in el[0]:
+                if t in r_new[el[1]:el[1]+G.getVertex(t).getDeadline()]: #if t is covered in the window where it can be covered
+                    covered_targets = np.append(covered_targets, t);
+        return covered_targets;
+    #calculate the expired targets on G, given a route and its history of attacks
+    #takes as input:
+    # the graph G
+    # the position v where D is at time j
+    # the time passed j since the beginning of the game
+    #it returns:
+    # the list of expired targets
+    def calculateExpiredTargets(self, G, v, j):
+        expired_targets = np.array();
+        r_new = np.append(self.route_si, v);
+        for el in self.history:
+            for t in el[0]:
+                if t in r_new[el[1]:el[1]+G.getVertex(t).getDeadline()]: #if t is covered in the window where it can be covered
+                    continue;
+                elif j-el[1] < G.getVertex(t).getDeadline(): #otherwise it is expired if it's deadline's ended up
+                    expired_targets = np.append(expired_targets, t);
         return expired_targets;
     #function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self):
@@ -165,59 +188,49 @@ def PathFinder(G, v, t, k):
     #print(target_dictionary);
     M = np.array([[[None for l in range(len(target_dictionary))] for j in range(n)]for i in range(n)]);   
     initial_layer = target_dictionary[td.listToString([v])] if v==t else 0; #initial layer on M where the game begins  
-    M[v][0][initial_layer] = list([RouteExpansion3(v, None, G.getVertex(v).getValue() if v in np.array(t) else 0, v if v==t else None, [[t],0])]);       
+    M[v][0][initial_layer] = list([RouteExpansion3(v, None, G.getVertex(v).getValue() if v==t else 0, np.array(v) if v==t else None, [[t],0])]);       
     # TODO: remeber to eliminate the empty route (isNone()==True) when at least a valid route is added to a cell of M[][][]
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]);#put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore
     #print(stopping_layers);    
     #we 'populate' the matrix M by columns and then with an in-depth approach wrt the third layer l    
     for j in range(n-1):
         for l in range(len(target_dictionary)): #associate to each of the matrix M a set of covered targets over the parts of (|T| k) possible targets with k resources
-            if l in stopping_layers:
+            if l in stopping_layers: #we don't expand layer that are final (all targets expired)
                 continue;
             for i in range(n):
-                if M[i][j][l] is None:
+                if M[i][j][l] is None: #this condition is to prevent the expansion of null cells of M
                     continue;
-                for r in M[i][j][l]: #for each route in cell M[i][j][l]
-                    if r.isNone() or r is None: #this one is to prevent routes' expansion when all the targets are covered/expired (we don't expand a M[][][] if it represent the last layer(a layer of cardinality k))
-                        continue;
                 #We suppose from 1 to k-left attacks and we update M accoridng to this fact
                 # we can choose to modify M by passing its column (with all the layers) to AttackPrediction function
                 # or let the function return all the new routes with the respective layer and then modify M
-                #Anyway, we expect that after this passage we have M modified and ready to pass through the 'expand routes' passage
-                M = ap.AttackPrediction(G, i, j, l, M, k+1, target_dictionary); #this function calculates directly all the new cells activated on M
+                #Anyway, we expect that after this passage we have M modified and ready to pass through the 'expand routes' passage                    
+                M = ap.AttackPrediction(G, i, j, l, M, k+1, target_dictionary); #this function calculates directly the content (in terms of routes) of all the new cells activated on M
                 """ ATTENZIONE A NON CREARE ROTTE E RICHIAMARE SU DI ESSE ATTACKPREDICTION ALTRIMENTI VA AD INFINITO FINO A FINE GIOCO
                 AL PRIMO TURNO!!!"""                
-                # 'expand routes' passage
-                # remember that the domination of routes is done in this way: we expand a route if
-                    # the next cells doesnt contain a route whose value is higher(for the defender)
-                    # and the targets under attacks are the same till that time 
+        # 'expand routes' passage
+            # remember that the domination of routes is done in this way: we expand a route if
+                # the next cells doesnt contain a route whose value is higher(for the defender)
+                # and the targets under attacks are the same till that time 
+        for l in range(len(target_dictionary)):
             if l in stopping_layers:
                 continue;
             for i in range(n):
-                if M[i][j][l] is None:
+                if M[i][j][l] is None: #this condition is to prevent the expansion of null cells of M
                     continue;
+                adjacentvertices =  np.array(G.getVertex(i).getAdjacents()); #calculate adjacent vertices to vertex i on G
                 for r in M[i][j][l]: #for each route in cell M[i][j][l]
-                    if r.isNone() or r is None: #this one is to prevent routes' expansion when all the targets are covered/expired (we don't expand a M[][][] if it represent the last layer(a layer of cardinality k))
+                    if r.isNone() or r is None: #this condition is to prevent the expansion of null routes
                         continue; 
-                adjacentvertices =  np.array(G.getVertex(i).getAdjacents()); 
-                for r in M[i][j][l]: #for all routes in a given cell M[i][j][l], expand them accoridngly to their respective hisotry (under attacks and/or covered)
-                    if r.isNone() or r is None:
-                        continue;
                     for v1 in adjacentvertices:
-                        #check all the expired targets and also the covered ones
-                        # diminish all the deadlines of the targets under attack by a time equal to ..ahaha..ok this one is a big trouble
-                        # how (the fuck) do I carry on all the info needed to know the exact deadlines of each target under attack?
-                        #associate a binary matrix (this one could be sparse) that contains the power set of combinations of k targets and a 1 if the
-                        #target is under attack at time zero, 0 otherwise. On the columns we have the power set, on the rows the time j.
-                        #a description is a vector that point to different elements (at most k) on the matrix                    
-                        condition1 = r.getUtility() <= min(r_1.getUtility() for r_1 in M[v1][j+1][l].getElements()); #check out the verse of this inequality!
+                        condition1 = r.getUtility() <= min(r_1.getUtility() for r_1 in M[v1][j+1][l]); #check out the verse of this inequality!
                         condition2 = np.array_equal(np.intersect1d(r.getTargetsUnderAttack(), r.getCoveredTargets()), M[v1][j+1][l].getTargetsUnderAttack(), M[v1][j+1][l].getCoveredTargets()); #left condition on third layer if some tareget is expired on the next step!
                         if condition1 and condition2 : 
                             #check expired in the next step j+1
-                            expired, utility = r.caluclateExpiredTargets(G, v1, r, j+1); #RETURNS THE TARGETS EXPIRED, WE NEED v1 in order to calculate if moving on a new vertex can save something!
-                            l_new = target_dictionary[td.listToString(r.calculateExpiredTargets(G))]; #new layer on dp matrix M where the route is moved (if some target has expired)
-                            M[v1][j+1][l_new].append(RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, expired, r.getHistory()));        
-
+                            expired = r.caluclateExpiredTargets(G, v1, j+1); #returns the targets expired so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!
+                            covered = r.calculateCoveredTargets(G, v1, j+1); #returns the targets covered so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!                       
+                            utility = min(0,-sum(G.getVertex(t).getValue() for t in expired));                            
+                            l_new = target_dictionary[td.listToString(expired)]; #new layer on dp matrix M where the route is moved (if some target has expired)                          
+                            M[v1][j+1][l_new].append(RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it     
     # extract the utilities of the game
     # then terminate  
     return;

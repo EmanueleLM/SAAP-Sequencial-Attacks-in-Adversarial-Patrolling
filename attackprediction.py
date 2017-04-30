@@ -15,7 +15,7 @@ import computecovsets as ccs
 import graph as gr
 import itertools
 import targetdictionary as td
-import pathfinder as pf
+#import pathfinder as pf
 
 # Attack Prediciton for k=2 sequencial attacks
 # G is the graph as set of vertices
@@ -64,14 +64,31 @@ In the other cases I want just the correct layer (expired plus covered)
 #It returns:
 # the updated M[:][j][:]
 def AttackPrediction(G, i, j, l, M, k, target_dictionary):
-    M_temp = cp.deepcopy(M);
+    M_temp = cp.deepcopy(M); #maybe just copy the layer under consideration M[:][j][:]
     for r in M_temp[i][j][l]: #for each route in a cell of the dp matrix
-        G_temp = cp.deepcopy(G); #use a temporary version of the graph in order to modify its components
-        for t_ua in r.getHistory(): #t_ua is in the form [[t1, t2,..], time_first_attack]
-            for t in t_ua[0]:
-                G_temp.getVertex(t).diminishDeadline(t_ua[1]);
-        for k_left in range(k-len(r.getTargetsUnderAttack())+1): #for every possible combination of attacks 
-            powerset = list(); 
+        new_history = cp.deepcopy(r.getHistory()); #copy the current history of the route
+        #solve full resources attacks with computecovsets
+        powerset = list();
+        powerset.append([p for p in itertools.combinations(np.intersect1d(r.getTargetsUnderAttack(), G.getTargets()), k-len(r.getTargetsUnderAttack()))]);
+        for t_next_attack in powerset:
+            G_temp = cp.deepcopy(G); #copy the graph we will use for the simultaneous attacks' case
+            for el in r.getHistory(): 
+                for t in el[0]:
+                    G_temp.getVertex(t).diminishDeadline(el[1]); #diminish the deadlines on the new graph in order to call covsets
+            t_under_attack = np.array([[[s for s in q] for q in p[0]] for p in r.getHistory()]); #trick to flatten the list in-place           
+            ccs.computeCovSet(G_temp, i, np.intersect1d(r.getTargetsUnderAttack(), t_under_attack));
+            if new_history[-1][1] == j: #if the attacks happen at the same time as the ones previousy lunched (e.g. at the beginning A uses more than 1 resources)
+                new_history[-1][0].append([t for t in t_next_attack]); #append the history to the last one element of the route's history          
+            else:
+                new_history.append([[t for t in t_next_attack],j]);
+            r_new = pf.ExpandRoute3(r.getRoute_si(), r.getRoute_ij, r.getUtility(), r.getCoveredTargets(), new_history);
+            new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets()));
+            r_new.setUtility(new_utility);                    
+            l_new = target_dictionary[td.listToString([r_new.calculateExpiredTargets(G)])]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
+            M_temp[i][j][l_new].append([r_new]);
+        #now deal with non-fully resources attacks        
+        for k_left in range(k-len(r.getTargetsUnderAttack())): #for every possible combination of attacks wrt the resources left to A (excluded the fully resources attack, yet calculated)
+            powerset = list(); # empty the powersets list if it was filled with the targets of the previous step
             for i in range(1, k_left): #compute the combination of the parts of the elements in l, till cardinality k 
                 powerset.append([p for p in itertools.combinations(np.intersect1d(r.getTargetsUnderAttack(), G.getTargets()), i)]);
             #TODO: computeCovSets integration
@@ -79,12 +96,13 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
                     #covsets and modify M_temp
                 #else do what follows...
             for t_next_attack in powerset:
-                new_history = r.getHistory();
-                if new_history[-1][1] == j:
+                if new_history[-1][1] == j: 
                     new_history[-1][0].append([t for t in t_next_attack]);
                 else:
-                    new_history.append([[t for t in t_next_attack],j])
-                r_new = pf.ExpandRoute3(r.getRoute_si(), r.getRoute_ij, r.getUtility(), new_history);
+                    new_history.append([[t for t in t_next_attack],j]);
+                r_new = pf.ExpandRoute3(r.getRoute_si(), r.getRoute_ij, r.getUtility(), r.getCoveredTargets(), new_history);
+                new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets()));
+                r_new.setUtility(new_utility);                    
                 l_new = target_dictionary[td.listToString([r_new.calculateExpiredTargets(G)])]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
                 M_temp[i][j][l_new].append([r_new]);
     return M_temp;

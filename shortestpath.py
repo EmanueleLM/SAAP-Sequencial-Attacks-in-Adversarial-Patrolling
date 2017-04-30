@@ -24,5 +24,5 @@ def shortest_path(matrix,m,n):
                 matrix[i][j]=0;
     H=nx.Graph(matrix);
     SP_cost = nx.floyd_warshall_numpy(H);
-    SP = np.array(nx.shortest_path(H));
+    SP = nx.shortest_path(H);
     return [SP,SP_cost];

@@ -18,13 +18,15 @@ import btree as bt
 import shortestpath as sp
 
 
-#the inputs are:
-#the graph G on which the game is played (please note that if you want to calculate the best covering route)
-#on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
-#the function computecovsets
-#the vertex v as a positive integer (indexnumber of v on G)
-#the set of targets as a list of numbers (the index number of each target is under attack on G) even if there's just one target, pass it as a list (i.e. [])
-#the function returns the covering routes calculated from node v
+#==============================================================================
+# the inputs are:
+# the graph G on which the game is played (please note that if you want to calculate the best covering route)
+# on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
+# the function computecovsets
+# the vertex v as a positive integer (indexnumber of v on G)
+# the set of targets as a list of numbers (the index number of each target is under attack on G) even if there's just one target, pass it as a list (i.e. [])
+# the function returns the covering routes calculated from node v
+#==============================================================================
 def computeCovSet(G, v, targets):
     targets = np.sort(targets.astype(int)); #order the targets by their index_number (we use the same order in the btree)
     btree = bt.BTree(); #create an aempty binary tree 
@@ -48,7 +50,6 @@ def computeCovSet(G, v, targets):
                     if t2 in targets and t2 not in q[0] and G.getVertex(t2).getDeadline() >= q[1] + SP_cost[q[0][-1]][t2]:                        
                         condition3 = False;
                         break;
-
                 if (condition1) and (condition2) and (condition3):  
                     W.append(t); #legal and feasible expansions for current route q
                 for w in W: #for all expansions, see if they are better than the current one (using a B-Tree)
@@ -58,18 +59,20 @@ def computeCovSet(G, v, targets):
                     if not U: #just take the depth of the tree where the nodes goes to the right(r contains the target)
                         C.append([np.append(q[0],w),cost]);
                         btree.update(C[-1][0],targets,btree.root,bt.binaryVectorFromRoute(C[-1][0],targets),C[-1][0]);#update the tree (maybe its better to do it in the search function?)
-    """eventually append to each route the utility
+    #eventually append to each route the utility
     for c in C:
-        c.append(getUtilityFromRoute(G, c));
-    """
+        c.append(getUtilityFromRoute(G, c[0], targets));
+    
     return C;
 
-#function that eliminates the diminated covering routes of dimensionality i(i.e. contain exactly i elements)
-# a route r dominates another route r' iff r contains the same elements as r', the last element in both the routes is the same
-# and the cost of r is lower(strictly) than the cost of r'
-#takes as input
-# the set of covering routes C
-# the size i of the routes that you want to be purged each other   
+#==============================================================================
+# function that eliminates the diminated covering routes of dimensionality i(i.e. contain exactly i elements)
+#  a route r dominates another route r' iff r contains the same elements as r', the last element in both the routes is the same
+#  and the cost of r is lower(strictly) than the cost of r'
+# takes as input
+#  the set of covering routes C
+#  the size i of the routes that you want to be purged each other   
+#==============================================================================
 def purgeDominatedStrategies(C, i):
     C_temp = [r for r in C if len(r[0])==i];
     for c in C_temp:
@@ -84,17 +87,21 @@ def purgeDominatedStrategies(C, i):
                         break;#if we remove the former element, the cycle can't go on
     return C;
 
-#function that computes the utility(for the Defender) associated to a route
-#it's assumed that route is covered by its deadline,
-#otherwise the route wouldn't have been created
-#the function takes as input
-# the graph G
-# the route 'route' on which it is calculated the utility
-#returns the utility associated to that route on G
-def getUtilityFromRoute(G, route):
+#==============================================================================
+# function that computes the utility(for the Defender) associated to a route
+# it's assumed that route is covered by its deadline,
+# otherwise the route wouldn't have been created
+# the function takes as input
+#  the graph G
+#  the route 'route' on which it is calculated the utility
+#  the targets that are indeed under attack
+# returns the utility associated to that route on G
+#==============================================================================
+def getUtilityFromRoute(G, route, targets):
     utility = 0;
-    for r in route[0]:
-        utility += G.getVertex(r).getValue();
+    for t in targets:
+        if t not in route:
+            utility -= G.getVertex(t).getValue();
     return utility;
     
 """

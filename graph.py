@@ -13,13 +13,15 @@ import numpy as np
 
 inf = 999; #if an arc has this weight, it means that two nodes are not connected on G
 
-#class Vertex that defines the vertices on graph G
-#we distinguish between targets and non-targets
-# each Vertex has the following attributes
-# is_target that is True if the vertex is a target on G (False, otherwise)
-# value which is the value of the target (between 0 and 1, 0 if it's not a target, 1 at most if it's a target)
-# deadline which is the deadline associated to each vertex on G (it becomes at most -1 for expired targets)
-# adjacents which is a list of all the indices of vertices that are neighbors of the aformentioned vertex
+#==============================================================================
+# class Vertex that defines the vertices on graph G
+# we distinguish between targets and non-targets
+#  each Vertex has the following attributes
+#  is_target that is True if the vertex is a target on G (False, otherwise)
+#  value which is the value of the target (between 0 and 1, 0 if it's not a target, 1 at most if it's a target)
+#  deadline which is the deadline associated to each vertex on G (it becomes at most -1 for expired targets)
+#  adjacents which is a list of all the indices of vertices that are neighbors of the aformentioned vertex
+#==============================================================================
 class Vertex(object):
     vertex_number = -1; #this number must be unique for each vertex
     #initialize the object "vertex" by defyining its attributes
@@ -78,9 +80,11 @@ class Vertex(object):
     def __iter__(self):
         return self;
         
-#class Graph that defines a graph as a set of vertices and edges       
-#it has the following attributes:
-# vertices which is the complete list of vertices on G 
+#==============================================================================
+# class Graph that defines a graph as a set of vertices and edges       
+# it has the following attributes:
+#  vertices which is the complete list of vertices on G 
+#==============================================================================
 class Graph(object):
     vertices = np.array([]);
     def __init__(self, vertices):
@@ -100,10 +104,12 @@ class Graph(object):
         self.vertices = np.append(self.vertices,v);
         #give to each vertex a unique number
         v.setVertexNumber = len(self.vertices)-1;
-    #uses a binary vector to set the adjacents' vertices (can be used with the adjacency matrix)
-    #takes as input the vertex, and adj_vertices, a binary vector of size |V|
-    #and whenever an element on that vector is 1, it adds to the list of the adjacents
-    #the corresponding vecotr in G (indexing starts from 1)
+#==============================================================================
+#     uses a binary vector to set the adjacents' vertices (can be used with the adjacency matrix)
+#     takes as input the vertex, and adj_vertices, a binary vector of size |V|
+#     and whenever an element on that vector is 1, it adds to the list of the adjacents
+#     the corresponding vecotr in G (indexing starts from 1)
+#==============================================================================
     def setAdjacents(self, vertex, adj_vertices):
         i = 0;
         for b in adj_vertices:

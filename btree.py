@@ -10,13 +10,15 @@ Binary Tree to deal with the routes, their expansions, their cost calculations
 import numpy as np;
 
 
-#class Node that defines the nodes in the binary tree
-#it hase the following attributes
-#left, right: the left and right parents of the node
-#parent: the parent of the node
-#cost: the cost associated to the route that leads to that node(e.g. if the node is the path described by a route that covers t1,t3,t4, it will contain the cost associated to that route)
-#height: the height of the node in the tree
-#isLeaf: it is used to see if the node is a leaf
+#==============================================================================
+# class Node that defines the nodes in the binary tree
+# it hase the following attributes
+# left, right: the left and right parents of the node
+# parent: the parent of the node
+# cost: the cost associated to the route that leads to that node(e.g. if the node is the path described by a route that covers t1,t3,t4, it will contain the cost associated to that route)
+# height: the height of the node in the tree
+# isLeaf: it is used to see if the node is a leaf
+#==============================================================================
 class Node(object):
     def __init__(self, left, right, parent, cost, height, isleaf):
         self.left = left;
@@ -50,9 +52,12 @@ class Node(object):
     def setIsLeaf(self, isleaf):
         self.isleaf = isleaf;
     
-#class that defines the binary tree 
-#it has as elements a root which is the root of the tree (it corresponds to a "virtual" vertex on G where the cost of moving from that node to every
-    #node on G is 0). This trick is used to take into consideration the case where the initial vertex is a target itself: so it could be a covering route of some kind.
+#==============================================================================
+# class that defines the binary tree 
+#  it has as elements a root which is the root of the tree (it corresponds to a "virtual" vertex on G where the cost 
+#  of moving from that node to every node on G is 0). This trick is used to take into consideration the 
+#  case where the initial vertex is a target itself: so it could be a covering route of some kind.
+#==============================================================================
 class BTree(object):
     def __init__(self):
         self.root = None;
@@ -61,14 +66,16 @@ class BTree(object):
         self.SP_cost = np.array(SP);
     def getRootNode(self):
         return self.root;
-    #search in the tree if the route v we have found has a cost which
-    #is higher than one which is present in the tree, returns 1, 0 otherwise
-    #in the first case the route we passed to the function is better than the previous one stored
-    #in the tree, so we will update() the tree acoordingly to the new route, otherwise nothing happens
-    #takes as input:
-    #cost of the route v
-    #the route expressed as binary vector wrt the order imposed to the targets (0 if the i-th target is not covered by v, 1 otherwise)
-    #return True if the cost is less than the cost of a route already present in the tree(or if the route v is not present), False otherwise
+#==============================================================================
+#     search in the tree if the route v we have found has a cost which
+#     is higher than one which is present in the tree, returns 1, 0 otherwise
+#     in the first case the route we passed to the function is better than the previous one stored
+#     in the tree, so we will update() the tree acoordingly to the new route, otherwise nothing happens
+#     takes as input:
+#     cost of the route v
+#     the route expressed as binary vector wrt the order imposed to the targets (0 if the i-th target is not covered by v, 1 otherwise)
+#     return True if the cost is less than the cost of a route already present in the tree(or if the route v is not present), False otherwise
+#==============================================================================
     def search(self, cost, v):
         node = self.getRootNode();  
         for i in v:
@@ -85,21 +92,22 @@ class BTree(object):
             return True;
         else:
             return False;
-
-    #update function: it updates the btree used to store the routes    
-    #we go down through the tree and update a route
-    #if the last target in the route is covered, build a new tree from that point on where the root is the new
-    # target, and its cost is the sum of the previous route's cost plus the shortest path from 
-    # prevoius vertex to this new one
-    #if the target is not covered, just create a new tree on the right where the new cost is
-    # the provious cost of the route (a general case of stand still for D wrt a target)
-    #oldroute is the non-ordered route, used to calculate its cost (which is dependent on the targets' order obviously)
-    #update takes as input:
-    # the route to be updated
-    # the set of targets
-    # the root of the tree(should be removed)    
-    # the route expressed as binary vector wrt the order imposed to the targets (0 if the i-th target is not covered by v, 1 otherwise)
-    # the route in the original order (not ordered by indexvertex),on which we calculate the sp cost
+#==============================================================================
+#     update function: it updates the btree used to store the routes    
+#     we go down through the tree and update a route
+#     if the last target in the route is covered, build a new tree from that point on where the root is the new
+#      target, and its cost is the sum of the previous route's cost plus the shortest path from 
+#      prevoius vertex to this new one
+#     if the target is not covered, just create a new tree on the right where the new cost is
+#      the provious cost of the route (a general case of stand still for D wrt a target)
+#     oldroute is the non-ordered route, used to calculate its cost (which is dependent on the targets' order obviously)
+#     update takes as input:
+#      the route to be updated
+#      the set of targets
+#      the root of the tree(should be removed)    
+#      the route expressed as binary vector wrt the order imposed to the targets (0 if the i-th target is not covered by v, 1 otherwise)
+#      the route in the original order (not ordered by indexvertex),on which we calculate the sp cost
+#==============================================================================
     def update(self, route, targets, node, v, oldroute):
         #print(targets[0]);
         #print(route[0]);
@@ -129,16 +137,16 @@ class BTree(object):
                 return self.update(route, targets[1:], node.left, v[1:],oldroute);
             else:# in this case a route that does not cover a target already exists (but for sure that route will cover at most another target which comes after in T)
                 #print("left go down");                
-                return self.update(route, targets[1:], node.left,v[1:],oldroute);
-            
+                return self.update(route, targets[1:], node.left,v[1:],oldroute);                
                 
-                
-#transform a route into a binary vector where each entry v[i] is 1 if the corresponding
-#target in T[i] is covered by r, 0 otherwise.
-#takes as input
-# the route r (which is a vector!) 
-# the targets T in topological order (wrt Vertex.vertex_number)
-#returns the binary vector v as defined above
+#==============================================================================
+# transform a route into a binary vector where each entry v[i] is 1 if the corresponding
+# target in T[i] is covered by r, 0 otherwise.
+# takes as input
+#  the route r (which is a vector!) 
+#  the targets T in topological order (wrt Vertex.vertex_number)
+# returns the binary vector v as defined above
+#==============================================================================
 def binaryVectorFromRoute(r, T):
     i=0;
     r = np.sort(r);
@@ -150,33 +158,32 @@ def binaryVectorFromRoute(r, T):
             i+=1;
         else:
             v = np.append(v,0);
-    return v.astype(int);
+    return v.astype(int);    
     
-    
-#create a 'purged' version of the binaryVectorFromRoute:
-# i.e. delete all the terminal zeros in the end of the vector
-# it is used to search in the tree for routes that are already in
-# e.g. if the input v is [0,1,1,0] it returns [0,1,1] etc.
-#takes as input
-# the binary vector v to "purge"
-# returns the "purged" vector v
+#==============================================================================
+# create a 'purged' version of the binaryVectorFromRoute:
+#  i.e. delete all the terminal zeros in the end of the vector
+#  it is used to search in the tree for routes that are already in
+#  e.g. if the input v is [0,1,1,0] it returns [0,1,1] etc.
+# takes as input
+#  the binary vector v to "purge"
+#  returns the "purged" vector v
+#==============================================================================
 def purgeBinaryVector(v):
     if 1 not in v:
         return np.array([]);
     else:
         temp = v[::-1].tolist().index(1);
-        return v[:len(v)-temp]
-        
-        
+        return v[:len(v)-temp]        
             
-#given a route as an ordered set of targets, calculate the cost of the shortest path that covers all the target inside in it            
+#==============================================================================
+# #given a route as an ordered set of targets, calculate the cost of the shortest path that covers all the target inside in it            
+#==============================================================================
 def calculateCostOfRoute(route, SP_cost):
     cost = 0;
     for r in range(0,len(route)-1):
         cost += SP_cost[route[r]][route[r+1]];
     return cost;
-
-
 
 """
 Little testing to see if the algorithms work as expected

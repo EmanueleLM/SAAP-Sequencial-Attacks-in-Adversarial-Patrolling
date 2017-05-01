@@ -77,7 +77,7 @@ def PathFinder(G, v, t, k):
     #print(target_dictionary);
     M = np.array([[[None for l in range(len(target_dictionary))] for j in range(n)]for i in range(n)]);   
     initial_layer = target_dictionary[td.listToString([v])] if v==t else 0; #initial layer on M where the game begins  
-    M[v][0][initial_layer] = list([re.RouteExpansion3(v, None, G.getVertex(v).getValue() if v==t else 0, np.array(v) if v==t else None, list([[t],0]))]);       
+    M[v][0][initial_layer] = list([re.RouteExpansion3(v, None, G.getVertex(v).getValue() if v==t else 0, np.array(v) if v==t else None, list([np.array([t]),0]))]);       
     # TODO: remeber to eliminate the empty route (isNone()==True) when at least a valid route is added to a cell of M[][][]
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]);#put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore
     #print(stopping_layers);    

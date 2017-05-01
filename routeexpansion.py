@@ -81,7 +81,7 @@ class RouteExpansion3(RouteExpansion):
     def getTargetsUnderAttack(self):
         targets_under_attack = np.array([]);
         for el in self.history:
-            targets_under_attack = np.append(targets_under_attack,[t for t in el[0]]);
+            targets_under_attack = np.append(targets_under_attack,[t for t in np.array([el[0]])]);
         return targets_under_attack.astype(int);
 #==============================================================================
 #     function that returns the set of covered targets using the intersection between targets covered so far

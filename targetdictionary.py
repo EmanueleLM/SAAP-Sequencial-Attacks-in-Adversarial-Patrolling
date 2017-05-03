@@ -3,6 +3,12 @@
 Created on Sun Apr 23 17:46:13 2017
 
 @author: Emanuele
+
+You may ask: why would you use a vocabulary instead of a binary vector to represent targets on G?
+Let's consider a case where there is just one target and |V|>>1 vertices on G
+In the worst case scenario the target can have the indexNumber equals to |V|, so we would need
+a binary vector of dimension |V| for just one target! Instead in this case our vocabulary
+would contain just 2 elements (the empty element '' and the vertexNumber)
 """
 
 import itertools
@@ -34,6 +40,8 @@ def listToDictionary(l, k):
             regexp = str(j).replace(',', "");
             regexp = regexp.replace("(", "");
             regexp = regexp.replace(")", "");
+            #regexp = regexp.replace("[", "");
+            #regexp = regexp.replace("]", "");
             dic[regexp] = index;
             index += 1;
     return dic;

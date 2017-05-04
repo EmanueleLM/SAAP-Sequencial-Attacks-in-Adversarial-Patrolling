@@ -8,6 +8,9 @@ Pseudocode for the Compute--Cov--Set
 Given as input a vertex and a set of target T' under attack (simultaneous)
 return the strategies (i.e. the routes) and the utilities associated to that scenario
 
+Moreover you can pass directly the parameters to the solveSRG function that invokes computeCovSets
+and returns the best route and utility for a given set of targets, from a a starting position in the graph
+
 We employ lists instead of numpy.array for storing routes since numpy is not optimized for 
 managing non-omogenous arrays (while for example we use numpy for the shortest paths matrix)
 """
@@ -19,13 +22,17 @@ import shortestpath as sp
 
 
 #==============================================================================
-# the inputs are:
-# the graph G on which the game is played (please note that if you want to calculate the best covering route)
-# on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
-# the function computecovsets
-# the vertex v as a positive integer (indexnumber of v on G)
-# the set of targets as a list of numbers (the index number of each target is under attack on G) even if there's just one target, pass it as a list (i.e. [])
-# the function returns the covering routes calculated from node v
+#computeCovSets function calculates the covering routes on a Graph
+#takes as input:
+# the graph G on which the game is played (please note that if you want to calculate the best covering route
+#  on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
+#  the function computecovsets)
+# the vertex v as a positive integer (vertexNumber of v on G)
+# the set of targets as a list of integers (the vertexNumber of each target that is under attack on G) 
+#  even if there's just one target, pass it as a list (i.e. [])
+#the function returns:
+# the covering routes calculated from node v, composed by (route, cost, utility)
+# please note that the utility is expressed as negative sum of targets' value that have been lost
 #==============================================================================
 def computeCovSet(G, v, targets):
     targets = np.sort(targets.astype(int)); #order the targets by their index_number (we use the same order in the btree)
@@ -88,14 +95,15 @@ def purgeDominatedStrategies(C, i):
     return C;
 
 #==============================================================================
-# function that computes the utility(for the Defender) associated to a route
+#function that computes the utility(for the Defender) associated to a route
 # it's assumed that route is covered by its deadline,
 # otherwise the route wouldn't have been created
-# the function takes as input
+#the function takes as input
 #  the graph G
 #  the route 'route' on which it is calculated the utility
 #  the targets that are indeed under attack
-# returns the utility associated to that route on G
+#it returns:
+# the utility associated to that route on G
 #==============================================================================
 def getUtilityFromRoute(G, route, targets):
     utility = 0;
@@ -104,6 +112,31 @@ def getUtilityFromRoute(G, route, targets):
             utility -= G.getVertex(t).getValue();
     return utility;
     
+#==============================================================================
+#function that computes the best covering route on a set of targets under simultaneous attack
+# it's assumed that route is covered by its deadline,
+# otherwise the route wouldn't have been created
+#the function takes as input:
+# the graph G on which the game is played (please note that if you want to calculate the best covering route
+#  on a graph with different deadlines (i.e. in sequencial cases) you have to modify G before you pass it to
+#  the function computecovsets)
+# the vertex v as a positive integer (vertexNumber of v on G)
+# the set of targets as a list of integers (the vertexNumber of each target that is under attack on G) 
+#  even if there's just one target, pass it as a list (i.e. [])
+#it returns:
+# the best route in terms of utility
+# the utility of the aformentioned route
+#  please note that the utility is expressed as negative sum of targets' value that have been lost
+#==============================================================================
+def solveSRG(G, v, targets):
+    best_utility = -len(targets); # we initially impose that the utility is the one in the worst case scenario (everything is lost, every target has value equal to 1)  
+    best_route = np.array([]); # the initial best route is set to empty  
+    for c in computeCovSet(G, v, targets): # we call computeCovSets and we calculate the best route,utility couple  
+        if c[2] > best_utility: # strict inequality since we evaluate covering routes by increasing lenght, and we prefer obviously routes of minor complexity (i.e. shorter)            
+            best_route = c[0];
+            best_utility = c[2];
+    return best_route, best_utility;
+        
 """
 Little testing to see if the algorithms work as expected
 """    
@@ -124,4 +157,5 @@ G.setAdjacents(v3,np.array([0,1,1,1,0]));
 G.setAdjacents(v4,np.array([1,1,1,1,1]));
 G.setAdjacents(v5,np.array([1,0,0,1,1]));
 
-print(computeCovSet(G, 0, np.array([1,2,3,4])));
+print(computeCovSet(G, 0, np.array([1,2,3,4]))); # we calculate the best covering route on the graph generated previosuly
+print(solveSRG(G, 0, np.array([1,2,3,4]))); # we calculate the best covering route on the graph by solving the SRG problem

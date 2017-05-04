@@ -75,15 +75,16 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
                 for t in el:
                     for t1 in el[0]:
                         G_temp.getVertex(t1).diminishDeadline(el[1]); #diminish the deadlines on the new graph in order to call covsets
-            t_under_attack = np.hstack([q[0] for q in r.getHistory()]); #trick to flatten the list in-place                      
-            ccs.computeCovSet(G_temp, i, np.intersect1d(r.getTargetsUnderAttack(), t_under_attack));
+            #t_under_attack = np.hstack([q[0] for q in r.getHistory()]); #trick to flatten the list in-place                      
+            best_route, best_utility = ccs.solveSRG(G_temp, i, t_next_attack);
             if new_history[-1][1] == j: #if the attacks happen at the same time as the ones previousy lunched (e.g. at the beginning A uses more than 1 resources)
                 new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack]); #append the history to the last one element of the route's history          
             else:
                 new_history.append([np.array([t for t in t_next_attack]),j]);
-            r_new = re.RouteExpansion3(r.getRoute_si(), r.getRoute_ij, r.getUtility(), r.getCoveredTargets(), new_history);
-            new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets(G, None, j)));
-            r_new.setUtility(new_utility);                    
+            r_new_covered_targets = np.append(r.getCoveredTargets(), [t for t in best_route]);
+            r_new = re.RouteExpansion3(r.getRoute_si(), best_route, best_utility + r.getUtility(), r_new_covered_targets, new_history);
+            #new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets(G, None, j)));
+            #r_new.setUtility(new_utility);                    
             l_new = target_dictionary[td.listToString(r_new.calculateExpiredTargets(G, i, j))]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
             if M_temp[l_new][i][j] != None:
                 M_temp[l_new][i][j].append(r_new);

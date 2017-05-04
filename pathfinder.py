@@ -110,29 +110,23 @@ def PathFinder(G, v, t, k):
                         #check expired in the next step j+1
                         expired = r.calculateExpiredTargets(G, v1, j+1); #returns the targets expired so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!
                         covered = r.calculateCoveredTargets(G, v1, j+1); #returns the targets covered so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!                       
-                        utility = min(0,-sum(G.getVertex(t).getValue() for t in expired));                            
+                        utility = min(r.getUtility(),-sum(G.getVertex(t).getValue() for t in expired));                            
                         l_new = target_dictionary[td.listToString(expired)]; #new layer on dp matrix M where the route is moved (if some target has expired)                          
-                        #conditions on which, if both True, we update the routes                        
-#==============================================================================
-# we will update the routes in this manner: if a route enters in a cell and that cell does not contain  a route
-# with the same targets under attack, we will put that route on that cell. Otherwise if a route has the same targets under
-# attack and the same terminal node, we will bring with us, and expand, only the route that guarantees a better utility to D (so the best between two)
-#                         condition1 = False;
-#                         condition2 = False;
-#                         if M[l_new][v1][j+1] != None:
-#                             for r_next_layer in M[l_new][v1][j+1]:
-#                                 condition2 = np.array_equal(np.intersect1d(r.getTargetsUnderAttack(), r.getCoveredTargets()), M[l][v1][j+1].getTargetsUnderAttack(), M[l][v1][j+1].getCoveredTargets()); #left condition on third layer if some tareget is expired on the next step!
-#                                 if condition2:
-#                                     condition1 = r.getUtility() <= r_next_layer.getUtility(); #check out the verse of this inequality!
-#                                     if condition1:
-#                                         break;
-#                         if condition1 and condition2 : 
-#==============================================================================
+                        #we will update the routes in this manner: if a route enters in a cell and that cell does not contain  a route
+                        # with the same targets under attack, we will append that route on that cell. Otherwise if a route has the same targets under
+                        # attack and the same terminal node, we will bring with us, and expand, only the route that guarantees a better utility to D (so the best between two)
+                        condition1 = True;
                         if M[l_new][v1][j+1] != None:
-                            M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it     
-                        else:
-                            M[l_new][v1][j+1] = list([re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory())]);#expand the new route calculating all the new elements inside it     
-
+                           for r_next_layer in M[l_new][v1][j+1]:
+                               condition1 = np.array_equal(np.intersect1d(r.getTargetsUnderAttack(), r.getCoveredTargets()), np.intersect1d(r_next_layer.getTargetsUnderAttack(), r_next_layer.getCoveredTargets())); #left condition on third layer if some tareget is expired on the next step!
+                               if condition1:
+                                   condition1 = r.getUtility() > r_next_layer.getUtility(); #check out the verse of this inequality!
+                                   break;
+                        if condition1: 
+                            if M[l_new][v1][j+1] != None:
+                                M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it     
+                            else:
+                                M[l_new][v1][j+1] = list([re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory())]);#expand the new route calculating all the new elements inside it     
     # extract the utilities of the game
     # then terminate  
     return;

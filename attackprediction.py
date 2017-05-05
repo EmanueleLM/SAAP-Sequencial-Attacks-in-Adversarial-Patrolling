@@ -20,12 +20,14 @@ import targetdictionary as td
 import routeexpansion as re
 
 #==============================================================================
-#  Attack Prediciton for k=2 sequencial attacks
+# Attack Prediciton for k=2 sequencial attacks
+# takes as input:
 #  G is the graph as set of vertices
 #  v is the vertex in G where D is placed at time j
 #  t is the target chosen as first target under attack by A
 #  j is the time at which A launch its last resource on target t
-#  return the best route in terms of utility, and the relative utility
+# returns:
+#  the best route in terms of utility, and the relative utility
 #==============================================================================
 def AttackPrediction2(G, v, t, j):
     G_temp = cp.deepcopy(G); #use a temporary version of the graph in order to modify its components
@@ -51,7 +53,8 @@ def AttackPrediction2(G, v, t, j):
     return [R_best,U_best]#return the best route in terms of utility, and the relative utility
  
 #==============================================================================
-#  Attack Prediction for k>2 sequencial attacks
+# Attack Prediction for k>2 sequencial attacks
+# takes as input:
 #  G is the graph as set of vertices
 #  i is the vertex in G where D is placed at time j
 #  j is the number of steps passed from the begginning of the game
@@ -59,7 +62,7 @@ def AttackPrediction2(G, v, t, j):
 #  M is the column (with all the third layer) of the matrix of dp M
 #  k is the total number of resources available to A
 #  target_dictionary is the dictionary used to index the third matrix layer, namely l
-# It returns:
+# it returns:
 #  the updated M[:][:][j] 
 #==============================================================================
 def AttackPrediction(G, i, j, l, M, k, target_dictionary):
@@ -67,7 +70,6 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
     for r in M[l][i][j]: #for each route in a cell of the dp matrix (the original one, otherwise we happily loop forever)
         #solve full resources attacks with computecovsets
         powerset = list([np.array(p) for p in itertools.combinations(np.setdiff1d(np.array(G.getTargets()), np.array(r.getTargetsUnderAttack())), k-len(r.getTargetsUnderAttack()))]);                    
-        #print(powerset);        
         for t_next_attack in powerset:  
             G_temp = cp.deepcopy(G); #copy the graph we will use for the simultaneous attacks' case
             new_history = cp.deepcopy(r.getHistory()); #copy the current history of the route
@@ -75,43 +77,51 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
                 for t in el:
                     for t1 in el[0]:
                         G_temp.getVertex(t1).diminishDeadline(el[1]); #diminish the deadlines on the new graph in order to call covsets
-            #t_under_attack = np.hstack([q[0] for q in r.getHistory()]); #trick to flatten the list in-place                      
-            best_route, best_utility = ccs.solveSRG(G_temp, i, t_next_attack);
-            if new_history[-1][1] == j: #if the attacks happen at the same time as the ones previousy lunched (e.g. at the beginning A uses more than 1 resources)
+            # create the new history of the attacks for the new route
+            if new_history[-1][1] == j: #if the attacks happen at the same time as the ones previousy launched (e.g. at the beginning A uses more than 1 resource)
                 new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack]); #append the history to the last one element of the route's history          
             else:
-                new_history.append([np.array([t for t in t_next_attack]),j]);
-            r_new_covered_targets = np.append(r.getCoveredTargets(), [t for t in best_route]);
-            r_new = re.RouteExpansion3(r.getRoute_si(), best_route, best_utility + r.getUtility(), r_new_covered_targets, new_history);
-            #new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets(G, None, j)));
-            #r_new.setUtility(new_utility);                    
-            l_new = target_dictionary[td.listToString(r_new.calculateExpiredTargets(G, i, j))]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
+                new_history.append([np.array([t for t in t_next_attack]),j]); # otherwise it will be an independent element of the history
+            # create the new route that will be inserted one of the final layes of M
+            r_new = re.RouteExpansion3(r.getRoute_si(), None, r.getUtility(), np.array([]), new_history);
+            best_route, best_utility = ccs.solveSRG(G_temp, i, np.setdiff1d(np.setdiff1d(r_new.getTargetsUnderAttack(), r_new.getCoveredTargets()), r_new.calculateExpiredTargets(G, None, j)));    
+            r_new_covered_targets = np.intersect1d(G.getTargets(), np.append(r.getCoveredTargets(), best_route));
+            r_new.setRoute_ij(best_route);
+            r_new.setCoveredTargets(r_new_covered_targets);
+            r_new.setUtility(r_new.getUtility()+best_utility);
+            #print(r_new.getUtility());
+            l_new = target_dictionary[td.listToString(r_new.getTargetsUnderAttack())]; #get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
+            #print(r_new.getTargetsUnderAttack());            
+            #print(l_new);            
             if M_temp[l_new][i][j] != None:
                 M_temp[l_new][i][j].append(r_new);
             else:
                 M_temp[l_new][i][j] = list([r_new]);
+            #print routes
+            r_new.printRouteExpansion();
         #now deal with non-fully resources attacks        
-        #print("partial attack part");               
         powerset = list(); # empty the powersets list if it was filled with the targets of the previous step
         for k_left in range(1,k-len(r.getTargetsUnderAttack())): #for every possible combination of attacks wrt the resources left to A (excluded the fully resources attack, yet calculated)
             for p in itertools.combinations(np.setdiff1d( G.getTargets(), r.getTargetsUnderAttack()), k_left):            
                 powerset.append(np.array(p));
-        #print("powerset:",powerset);
         for t_next_attack in powerset:
             new_history = cp.deepcopy(r.getHistory()); #copy the current history of the route
-            #print("new history",new_history);                       
             if new_history[-1][1] == j: 
                 new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack]); #append the history to the last one element of the route's history          
             else:
                 new_history.append([np.array([t for t in t_next_attack]),j]);
             r_new.expandRoute(r.getRoute_si(), r.getRoute_ij, r.getUtility(), r.getCoveredTargets(), new_history);
-            new_utility = -sum(G.getVertex(t).getValue() for t in np.intersect1d(r_new.getCoveredTargets(), r_new.calculateExpiredTargets(G, None, j)));
-            r_new.setUtility(new_utility);                    
-            l_new = target_dictionary[td.listToString(r_new.calculateExpiredTargets(G, i, j))]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)
+            if i in r_new.getTargetsUnderAttack() and i not in r.getCoveredTargets():
+                r_new.setCoveredTargets(np.append(r.getCoveredTargets(), i)); # target coperti al passo precedente più eventualmente uno nuovo se la rotta si sposta su uno sotto attacco             
+            l_new = target_dictionary[td.listToString(r_new.calculateExpiredTargets(G, None, j))]#get target expired till this time of game (we can have targets with deadline equal to zero that becomes immediatly expired)           
+            new_utility = -sum(G.getVertex(t).getValue() for t in r_new.calculateExpiredTargets(G, None, j));
+            r_new.setUtility(new_utility);            
             if M_temp[l_new][i][j] != None:
                 M_temp[l_new][i][j].append(r_new);
             else:
                 M_temp[l_new][i][j] = list([r_new]);
+        # print the new route
+        r_new.printRouteExpansion();
     return M_temp;
 
     

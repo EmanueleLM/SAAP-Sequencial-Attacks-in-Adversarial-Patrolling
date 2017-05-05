@@ -5,6 +5,8 @@ Created on Mon Apr 10 10:42:39 2017
 @author: Emanuele
 
 Binary Tree to deal with the routes, their expansions, their cost calculations
+
+Rise up this mornin', Smiled with the risin' sun, 'Tree' little birds. Pitch by my doorstep
 """
 
 import numpy as np;

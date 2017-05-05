@@ -3,6 +3,12 @@
 Created on Sun Apr 30 19:01:56 2017
 
 @author: Emanuele
+
+Expand Route algorithm: it is used to implement the elements contained in the
+dp  matrix M, i.e. the routes.
+We implemented two versions of the RouteExpansion's object; the former is for 2 attacks
+the latter is an extension (thanks to inheritance) of the former that includes the concepts of
+"covered targets" and "history", seen as a way to encode the past attacks in the game
 """
 
 
@@ -25,34 +31,36 @@ class RouteExpansion(object):
         self.route_si = route_si;
         self.route_ij = route_ij;
         self.u_ij = u_ij;        
-    #getter methods for the class
+#   getter methods for the class
     def getRoute_si(self):
         return self.route_si;
     def getRoute_ij(self):
         return self.route_ij;
     def getUtility(self):
         return self.u_ij;
-    #setter methods for the class
+#   setter methods for the class
     def setRoute_si(self, route_si):
         self.route_si = route_si;
     def setRoute_ij(self, route_ij):
         self.route_ij = route_ij;
     def setUtility(self, u_ij):
         self.u_ij = u_ij;
-    #function that prints the values of the element RouteExpansion
+#   function that prints the values of the element RouteExpansion
     def printRouteExpansion(self):
+        print("=====================================");
         print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ",self.u_ij);
-    #function that defines if the cell i,j is defined
-    #return True if there's a route defined inside of it, False otherwise
+        print("=====================================");
+#   function that defines if the cell i,j is defined
+#   return True if there's a route defined inside of it, False otherwise
     def isNone(self):
         return (self.route_si is None);
-    #function of equivalence
+#   function of equivalence
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
-    #function for distinguish between two vertices
+#   function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.__eq__(x));
-    #make the object iterable in a loop (i.e. for loops)
+#   make the object iterable in a loop (i.e. for loops)
     def __iter__(self):
         return self;
 
@@ -63,21 +71,21 @@ class RouteExpansion(object):
 class RouteExpansion3(RouteExpansion):
     def __init__(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
-        self.covered_targets = covered_targets;
-        self.history = list() if history==None else list([history]);
+        self.covered_targets = covered_targets.astype(int);
+        self.history = list() if history==None else history;
     def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
-        self.covered_targets = covered_targets;
-        self.history.append(history);
+        self.covered_targets = covered_targets.astype(int);
+        self.history = history;
     def getCoveredTargets(self):
         return self.covered_targets;
     def getHistory(self):
         return self.history;
     def setCoveredTargets(self, covered_targets):
-        self.covered_targets = covered_targets;
+        self.covered_targets = covered_targets.astype(int);
     def setHistory(self, history):
         self.history = history;
-    # function that calculates the targets under attack using the history element
+#   function that calculates the targets under attack using the history element
     def getTargetsUnderAttack(self):
         targets_under_attack = np.array([]);
         for el in self.history:
@@ -94,13 +102,16 @@ class RouteExpansion3(RouteExpansion):
 #      the list of covered targets
 #==============================================================================
     def calculateCoveredTargets(self, G, v, j):
-        covered_targets = np.array();
-        r_new = np.append(self.route_si, v);
+        covered_targets = np.array([]);
+        if v != None:
+            r_new_route_si = np.append(self.route_si, v);
+        else:
+            r_new_route_si = np.array([self.route_si]);
         for el in self.history:
             for t in el[0]:
-                if t in r_new[el[1]:el[1]+G.getVertex(t).getDeadline()]: #if t is covered in the window where it can be covered
+                if t in r_new_route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1] and j-el[1] <= G.getVertex(t).getDeadline(): #if t is covered in the window where it can be covered
                     covered_targets = np.append(covered_targets, t);
-        return covered_targets;
+        return covered_targets.astype(int);
 #==============================================================================
 #     calculate the expired targets on G, given a route and its history of attacks
 #     takes as input:
@@ -112,23 +123,27 @@ class RouteExpansion3(RouteExpansion):
 #==============================================================================
     def calculateExpiredTargets(self, G, v, j):
         expired_targets = np.array([]);
-        r_new = np.append(self.route_si, v);
+        if v != None:
+            r_new_route_si = np.append(self.route_si, v);
+        else:
+            r_new_route_si = np.array([self.route_si]);
         for el in self.history:
             for t in el[0]:
-                if t in r_new[el[1]:el[1]+G.getVertex(t).getDeadline()]: #if t is covered in the window where it can be covered
-                    continue;
-                elif j-el[1] < G.getVertex(t).getDeadline(): #otherwise it is expired if it's deadline's ended up
-                    expired_targets = np.append(expired_targets, t);
-        return expired_targets;
-    #function that prints the values of the element RouteExpansion3
+                #print(self.history);
+                if t not in r_new_route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1] and j-el[1] >= G.getVertex(t).getDeadline(): #if t is covered in the window where it can be covered
+                     expired_targets = np.append(expired_targets, t);
+        return expired_targets.astype(int);
+#   function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self):
-        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nTargets Under Attack in this scenario: ", self.getTargetsUnderAttack());
+        print("=====================================");
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nTargets Under Attack in this scenario: ", self.getTargetsUnderAttack(), "\nHistory: ", self.history);        
+        print("=====================================");
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
-    #function for distinguish between two vertices
+#   function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.__eq__(x));
-    #make the object iterable in a loop (i.e. for loops)
+#   make the object iterable in a loop (i.e. for loops)
     def __iter__(self):
         return self;
     

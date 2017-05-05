@@ -16,7 +16,6 @@ Long is the 'path' and hard, that out of Hell leads up to light
 import numpy as np;
 import attackprediction as ap
 import graph as gr
-import computecovsets as ccs
 import targetdictionary as td
 import routeexpansion as re
 
@@ -76,7 +75,7 @@ def PathFinder(G, v, t, k):
     target_dictionary = td.listToDictionary(G.getTargets(), k+1); #transform the list of targets into a power set and then into a dictionary of targets
     M = np.array([[[None for j in range(n)] for i in range(n)]for l in range(len(target_dictionary))]);
     initial_layer = target_dictionary[td.listToString([v])] if v==t else 0; #initial layer on M where the game begins  
-    M[initial_layer][v][0] = list([re.RouteExpansion3(v, None, G.getVertex(v).getValue() if v==t else 0, np.array(v) if v==t else np.array([]), list([[np.array([t]),0]]))]);       
+    M[initial_layer][v][0] = list([re.RouteExpansion3(v, None, 0, np.array(v) if v==t else np.array([]), list([[np.array([t]),0]]))]);       
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]);#put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore  
     #we 'populate' the matrix M by columns and then with an in-depth approach wrt the third layer l    
     for j in range(n-1):
@@ -109,24 +108,28 @@ def PathFinder(G, v, t, k):
                     for v1 in adjacentvertices:
                         #check expired in the next step j+1
                         expired = r.calculateExpiredTargets(G, v1, j+1); #returns the targets expired so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!
+                        #print(expired);                        
                         covered = r.calculateCoveredTargets(G, v1, j+1); #returns the targets covered so far in the game, we need v1 in order to calculate if moving on a new vertex can save something!                       
-                        utility = min(r.getUtility(),-sum(G.getVertex(t).getValue() for t in expired));                            
+                        utility = -sum(G.getVertex(t).getValue() for t in expired);     
+                        #print(utility);
                         l_new = target_dictionary[td.listToString(expired)]; #new layer on dp matrix M where the route is moved (if some target has expired)                          
                         #we will update the routes in this manner: if a route enters in a cell and that cell does not contain  a route
                         # with the same targets under attack, we will append that route on that cell. Otherwise if a route has the same targets under
                         # attack and the same terminal node, we will bring with us, and expand, only the route that guarantees a better utility to D (so the best between two)
                         condition1 = True;
+                        condition2 = True;
                         if M[l_new][v1][j+1] != None:
                            for r_next_layer in M[l_new][v1][j+1]:
                                condition1 = np.array_equal(np.intersect1d(r.getTargetsUnderAttack(), r.getCoveredTargets()), np.intersect1d(r_next_layer.getTargetsUnderAttack(), r_next_layer.getCoveredTargets())); #left condition on third layer if some tareget is expired on the next step!
                                if condition1:
-                                   condition1 = r.getUtility() > r_next_layer.getUtility(); #check out the verse of this inequality!
+                                   condition2 = r.getUtility() > r_next_layer.getUtility(); #check out the verse of this inequality!
                                    break;
-                        if condition1: 
+                        if condition1 and condition2: 
                             if M[l_new][v1][j+1] != None:
-                                M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it     
+                                M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, min(utility, r_next_layer.getUtility()), covered, r.getHistory()));#expand the new route calculating all the new elements inside it     
                             else:
                                 M[l_new][v1][j+1] = list([re.RouteExpansion3(np.append(r.getRoute_si(),v1), None, utility, covered, r.getHistory())]);#expand the new route calculating all the new elements inside it     
+
     # extract the utilities of the game
     # then terminate  
     return;
@@ -138,9 +141,9 @@ print("\nStart PathFinder Test Part:");
 #create vertices        
 v1 = gr.Vertex(0,0,0);
 v2 = gr.Vertex(1,0.5,3);
-v3 = gr.Vertex(1,1,3);
-v4 = gr.Vertex(1,0.6,3);
-v5 = gr.Vertex(1,0.5,3);
+v3 = gr.Vertex(1,0.6,3);
+v4 = gr.Vertex(1,0.7,3);
+v5 = gr.Vertex(1,0.8,3);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
 G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
@@ -151,10 +154,4 @@ G.setAdjacents(v3,np.array([0,1,1,1,0]));
 G.setAdjacents(v4,np.array([1,1,1,1,1]));
 G.setAdjacents(v5,np.array([1,0,0,1,1]));
 
-print(ccs.computeCovSet(G, 0, G.getTargets()));
-
-print("bestroute")
-print(PathFinder2(G, 1, 2)); #when D is on vertex 0, recieves an attack on target 1
-                             #we expect to loose -0.5 since the first attack is on vertex 1, but the best 
-                             #strategy for A is a sim. attack to two targets at the beginning, and D will never cover both of them
 PathFinder(G, 0, 2, 2);

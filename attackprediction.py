@@ -85,7 +85,7 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
             # create the new route that will be inserted one of the final layes of M
             r_new = re.RouteExpansion3(r.getRoute_si(), None, r.getUtility(), np.array([]), new_history);
             best_route, best_utility = ccs.solveSRG(G_temp, i, np.setdiff1d(np.setdiff1d(r_new.getTargetsUnderAttack(), r_new.getCoveredTargets()), r_new.calculateExpiredTargets(G, None, j)));    
-            r_new_covered_targets = np.intersect1d(G.getTargets(), np.append(r.getCoveredTargets(), best_route));
+            r_new_covered_targets = np.intersect1d(r_new.getTargetsUnderAttack(), np.append(r.getCoveredTargets(), best_route));
             r_new.setRoute_ij(best_route);
             r_new.setCoveredTargets(r_new_covered_targets);
             r_new.setUtility(r_new.getUtility()+best_utility);
@@ -120,8 +120,8 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
                 M_temp[l_new][i][j].append(r_new);
             else:
                 M_temp[l_new][i][j] = list([r_new]);
-        # print the new route
-        r_new.printRouteExpansion();
+            # print the new route
+            r_new.printRouteExpansion();
     return M_temp;
 
     

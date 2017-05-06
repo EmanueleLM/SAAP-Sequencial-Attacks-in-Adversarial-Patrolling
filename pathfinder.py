@@ -140,9 +140,9 @@ Little testing to see if the algorithms work as expected
 print("\nStart PathFinder Test Part:");          
 #create vertices        
 v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,3);
+v2 = gr.Vertex(1,0.5,2);
 v3 = gr.Vertex(1,0.6,3);
-v4 = gr.Vertex(1,0.7,3);
+v4 = gr.Vertex(1,0.7,2);
 v5 = gr.Vertex(1,0.8,3);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
@@ -154,4 +154,4 @@ G.setAdjacents(v3,np.array([0,1,1,1,0]));
 G.setAdjacents(v4,np.array([1,1,1,1,1]));
 G.setAdjacents(v5,np.array([1,0,0,1,1]));
 
-PathFinder(G, 0, 2, 2);
+PathFinder(G, 0, 2, 3);

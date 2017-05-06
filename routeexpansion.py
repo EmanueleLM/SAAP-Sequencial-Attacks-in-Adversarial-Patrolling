@@ -132,7 +132,7 @@ class RouteExpansion3(RouteExpansion):
                 #print(self.history);
                 if t not in r_new_route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1] and j-el[1] >= G.getVertex(t).getDeadline(): #if t is covered in the window where it can be covered
                      expired_targets = np.append(expired_targets, t);
-        return expired_targets.astype(int);
+        return np.unique(expired_targets.astype(int));
 #   function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self):
         print("=====================================");

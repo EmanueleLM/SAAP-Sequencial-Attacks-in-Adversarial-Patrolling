@@ -6,6 +6,8 @@ Created on Thu Apr  6 10:47:31 2017
 
 Class that manages graphs and vertices, used to shape our scenario of sequencial
 attacks in adversarial patrolling
+
+I, know a place, where the 'graph' is really greener
 """
 
 import shortestpath as sp
@@ -24,59 +26,59 @@ inf = 999; #if an arc has this weight, it means that two nodes are not connected
 #==============================================================================
 class Vertex(object):
     vertex_number = -1; #this number must be unique for each vertex
-    #initialize the object "vertex" by defyining its attributes
+#   initialize the object "vertex" by defyining its attributes
     def __init__(self, is_target, value, deadline):
         self.is_target = is_target;
         self.value = value;
         self.deadline = deadline;
         self.adjacents = np.array([]);
-    #return the vertex number
+#   return the vertex number
     def getVertexNumber(self):
         return self.vertex_number;
-    #set the vertex number (should be unique for each vertex in G)
+#   set the vertex number (should be unique for each vertex in G)
     def setVertexNumber(self, vertex_number):
         self.vertex_number = vertex_number;
-    #return True if the vertex is a target, False otherwise
+#   return True if the vertex is a target, False otherwise
     def isTarget(self):
         return self.is_target;
-    #return the value of the vertex (0 if it's not a target, more than 0 and at most 1 if its a target)
+#   return the value of the vertex (0 if it's not a target, more than 0 and at most 1 if its a target)
     def getValue(self):
         return self.value;
-    #return the deadline associated to the vertex (0 if the target is expired or if it's a non--target vertex)
+#   return the deadline associated to the vertex (0 if the target is expired or if it's a non--target vertex)
     def getDeadline(self):
         return self.deadline;
-    #return the list of adjacent vertices
+#   return the list of adjacent vertices
     def getAdjacents(self):
         return self.adjacents.astype(int);
-    #set if the vertex is a target
+#   set if the vertex is a target
     def setTarget(self, is_target):
         self.is_target = is_target;
-    #set the target value: at most it is 1, if it's not a target, it's zero
+#   set the target value: at most it is 1, if it's not a target, it's zero
     def setValue(self, value):
         if self.isTarget():
             self.value = min(1, value);
         else:
             self.value = 0;
-    #set the vertex deadline
+#   set the vertex deadline
     def setDeadline(self, deadline):
         if self.isTarget():
             self.deadline = max(-1, deadline);#we can't put it to max(0,deadline), 'cause if D is on a target and the deadline is 0, the target is protected, even if it has been expired from ages
         else:
             self.deadline = 0;
-    #function that diminishes the deadline of the target of a quantity j
+#   function that diminishes the deadline of the target of a quantity j
     def diminishDeadline(self, j):
         self.deadline -= j;
-    #print the adjacent vertices
+#   print the adjacent vertices
     def printAdjacents(self):
         print("Vertex "+ str(self.vertex_number) + " is adjacent to:\n"
                 + str(self.getAdjacents()));
-    #function of equivalence
+#   function of equivalence
     def __eq__(self, x):
         return self.vertex_number==x.vertex_number;
-    #function for distinguish between two vertices
+#   function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.vertex_number==x.vertex_number);
-    #make the object iterable in a loop (i.e. for loops)
+#   make the object iterable in a loop (i.e. for loops)
     def __iter__(self):
         return self;
         
@@ -91,15 +93,15 @@ class Graph(object):
         for v in vertices:
             self.vertices = np.append(self.vertices, v);
             v.setVertexNumber(len(self.vertices)-1);
-    #return the vertex by its number
+#   return the vertex by its number
     def getVertex(self, indexnumber):
         if indexnumber <= len(self.vertices):
-            return self.vertices[indexnumber];
+            return self.vertices[int(indexnumber)];
         else:
             print("Node does not exists\n");
     def getVertices(self):
         return self.vertices;
-    #function to add a vertex after the creation of the graph
+#   function to add a vertex after the creation of the graph
     def addVertex(self, v):
         self.vertices = np.append(self.vertices,v);
         #give to each vertex a unique number
@@ -118,9 +120,11 @@ class Graph(object):
             i+=1;
         vertex.adjacents.sort();
         return vertex.adjacents; 
-    #return the adjacency matrix
-    #it assign a value of 1 if two vertices are directly connected, inf otherwise
-    #every vertex shortest path to itself is considered to be 0 as weight
+#==============================================================================
+#     return the adjacency matrix
+#     it assign a value of 1 if two vertices are directly connected, inf otherwise
+#     every vertex shortest path to itself is considered to be 0 as weight
+#==============================================================================
     def getAdjacencyMatrix(self): 
         n = len(self.getVertices());
         A = np.array([[inf for i in range(n)] for j in range(n)]);
@@ -133,7 +137,7 @@ class Graph(object):
                 else:
                     A[i.vertex_number][j] = inf;
         return A;
-    #function that returns all the targets indices in G
+#   function that returns all the targets indices in G
     def getTargets(self):
         T = np.array([]);
         for v in self.getVertices():

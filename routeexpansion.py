@@ -72,7 +72,7 @@ class RouteExpansion3(RouteExpansion):
     def __init__(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets.astype(int);
-        self.history = list() if history==None else history;
+        self.history = history;
     def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
         super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets.astype(int);
@@ -166,7 +166,13 @@ class RouteExpansion3(RouteExpansion):
             for t in h[0]:
                 attacks += 1;
         return k-attacks;
-# function that prints the elements of the dp matrix that are terminals i.e. cannot be expanded anymore and represents a game that is ended     
+#==============================================================================
+# function that prints the elements of the dp matrix that are terminals i.e. cannot be expanded anymore 
+# and represents a game that is ended 
+# it takes as input:
+#  the matrix M of dp
+#  the number of resources available to A at the beginning of the game, k    
+#==============================================================================
 def printDPMatrix(M, k):
     for l in range(np.shape(M)[0]):
         for i in range(np.shape(M)[1]):

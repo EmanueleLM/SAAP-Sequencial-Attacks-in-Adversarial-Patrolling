@@ -8,7 +8,7 @@ Algorithm used to predict attacks once all the k targets are launched by A
 Two versions of the algorithms are presented: AttackPredition2 is the version where k=2
 AttackPrediction is the version for k>2
 
-How many 'routes' must a man walk down, before you call him a man?
+How many 'routes' must a man walk down, before you call him a man? [Bob Dylan]
 """
 
 import numpy as np
@@ -84,15 +84,15 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
             for el in r.getHistory(): 
                 for t in el:
                     for t1 in el[0]:
-                        G_temp.getVertex(t1).setDeadline(G.getVertex(t1).getDeadline() - el[1]); #diminish the deadlines on the new graph in order to call covsets
+                        G_temp.getVertex(t1).setDeadline(G.getVertex(t1).getDeadline() - (j-el[1])); #diminish the deadlines on the new graph in order to call covsets
             # create the new history of the attacks for the new route
-            if new_history[-1][1] == j: #if the attacks happen at the same time as the ones previousy launched (e.g. at the beginning A uses more than 1 resource)
-                new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack]); #append the history to the last one element of the route's history          
+            if j == 0: #if the attacks happen at the same time as the ones previousy launched (e.g. at the beginning A uses more than 1 resource)
+                new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack.astype(int)]); #append the history to the last one element of the route's history          
             else:
-                new_history.append([np.array([t for t in t_next_attack]),j]); # otherwise it will be an independent element of the history
+                new_history.append([np.array([t for t in t_next_attack.astype(int)]),j]); # otherwise it will be an independent element of the history
             # create the new route that will be inserted one of the final layes of M
-            r_new = re.RouteExpansion3(r.getRoute_si(), None, r.getUtility(), np.array([]), new_history);
-            best_route, best_utility = ccs.solveSRG(G_temp, i, np.setdiff1d(np.setdiff1d(r_new.getTargetsUnderAttack(G, j), r_new.getCoveredTargets()), r_new.calculateExpiredTargets(G, None, j)));    
+            r_new = re.RouteExpansion3(r.getRoute_si(), None, 0, r.getCoveredTargets(), new_history);
+            best_route, best_utility = ccs.solveSRG(G_temp, i, np.setdiff1d(r_new.getTargetsUnderAttack(G, j), r_new.calculateCoveredTargets(G, None, j)));    
             r_new_covered_targets = np.intersect1d(r_new.getTargetsUnderAttack(G, j), np.append(r.getCoveredTargets(), best_route));
             r_new.setRoute_ij(best_route);
             r_new.setCoveredTargets(r_new_covered_targets);
@@ -113,13 +113,14 @@ def AttackPrediction(G, i, j, l, M, k, target_dictionary):
         for k_left in range(1, r.attacksLeft(k)): #for every possible combination of attacks wrt the resources left to A (excluded the fully resources attack, yet calculated)
             for p in itertools.combinations(targets_amenable, k_left):            
                 powerset.append(np.array(p));
-        #print(powerset);
+                #print(powerset);
         for t_next_attack in powerset:
             new_history = cp.deepcopy(r.getHistory()); #copy the current history of the route
-            if new_history[-1][1] == j: 
-                new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack]); #append the history to the last one element of the route's history          
+            if j == 0: 
+                new_history[-1][0] = np.append(new_history[-1][0],[t for t in t_next_attack.astype(int)]); #append the history to the last one element of the route's history          
             else:
-                new_history.append([np.array([t for t in t_next_attack]),j]);
+                new_history.append([np.array([t for t in t_next_attack.astype(int)]),j]);
+                #print(new_history);
             r_new = re.RouteExpansion3(r.getRoute_si(), r.getRoute_ij, None, r.getCoveredTargets(), new_history);
             if i in r_new.getTargetsUnderAttack(G, j) and i not in r.getCoveredTargets():
                 r_new.setCoveredTargets(np.append(r.getCoveredTargets(), i)); # target coperti al passo precedente più eventualmente uno nuovo se la rotta si sposta su uno sotto attacco             

@@ -73,10 +73,12 @@ class RouteExpansion3(RouteExpansion):
         super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets.astype(int);
         self.history = history;
-    def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
-        super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
-        self.covered_targets = covered_targets.astype(int);
-        self.history = history;
+#==============================================================================
+#     def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
+#         super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
+#         self.covered_targets = covered_targets.astype(int);
+#         self.history = history;
+#==============================================================================
     def getCoveredTargets(self):
         return self.covered_targets;
     def getHistory(self):
@@ -91,40 +93,18 @@ class RouteExpansion3(RouteExpansion):
 #    the graph G where the game is played, used to calculate the deadline of each target
 #    the time j at which the game is, in order to calculate which targets is expired
 #   returns:
-#    the targets currently under attack, and not yet expired
-#   please note that this function returns the targets not expired, but they culd have been covered yet at time j by D!
+#    the targets currently under attack, and neither expired nor covered
 #==============================================================================
     def getTargetsUnderAttack(self, G, j):
         targets_under_attack = np.array([]);
+        targets_yet_expired = self.calculateExpiredTargets(G, None, j);
         for el in self.history:
             for t in el[0]:
-                if j-el[1] <= G.getVertex(t).getDeadline() and t not in targets_under_attack:
+                condition1 = t not in targets_yet_expired; # target is not expired
+                condition2 = t not in self.route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1];# in the windows in which the target is alive, it has been covered?
+                if condition1 and condition2: # a target is under attack if it has not expired or it has been covered in due time
                     targets_under_attack = np.append(targets_under_attack,t);
-        return targets_under_attack.astype(int);
-#==============================================================================
-#     function that returns the set of covered targets using the intersection between targets covered so far
-#      and targets under attack (and not expired)
-#     takes as input:
-#      the graph G
-#      the position v where D is at time j
-#      the time passed j since the beginning of the game
-#     it returns:
-#      the list of covered targets
-#==============================================================================
-    def calculateCoveredTargets(self, G, v, j):
-        covered_targets = np.array([]);
-        targets_under_attack = self.getTargetsUnderAttack(G, j);
-        if v != None:
-            r_new_route_si = np.append(self.route_si, v);
-        else:
-            r_new_route_si = np.array([self.route_si]);
-        for el in self.history:
-            for t in el[0]:
-                condition1 = t in r_new_route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1];
-                condition2 = j-el[1] <= G.getVertex(t).getDeadline() and t in targets_under_attack;
-                if condition1 and condition2: #if t is covered in the window where it can be covered and it's not expired yet
-                    covered_targets = np.append(covered_targets, t);
-        return np.unique(covered_targets.astype(int));
+        return np.unique(targets_under_attack).astype(int);
 #==============================================================================
 #     calculate the expired targets on G, given a route and its history of attacks
 #     takes as input:
@@ -139,17 +119,19 @@ class RouteExpansion3(RouteExpansion):
         if v != None:
             r_new_route_si = np.append(self.route_si, v);
         else:
-            r_new_route_si = np.array([self.route_si]);
+            r_new_route_si = np.array(self.route_si);
         for el in self.history:
             for t in el[0]:
-                #print(self.history);
-                if t not in r_new_route_si[el[1]:el[1]+G.getVertex(t).getDeadline()+1] and j-el[1] >= G.getVertex(t).getDeadline(): #if t is covered in the window where it can be covered
+                condition1 = t in r_new_route_si[el[1]:(el[1]+G.getVertex(t).getDeadline()+1)]; # the target has not been covered
+                condition2 = j-el[1] > G.getVertex(t).getDeadline() or (j-el[1] >= G.getVertex(t).getDeadline() and r_new_route_si[-1]!=t); # there's no time to cover it anymore
+                condition3 = t not in expired_targets; # once it has expired, it is done                
+                if not(condition1) and condition2 and condition3: #if t is covered in the window where it can be covered
                      expired_targets = np.append(expired_targets, t);
         return np.unique(expired_targets.astype(int));
 #   function that prints the values of the element RouteExpansion3
-    def printRouteExpansion(self):
+    def printRouteExpansion(self, G):
         print("=====================================");
-        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nHistory: ", self.history);        
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.calculateExpiredTargets(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
         print("=====================================");
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
@@ -173,7 +155,7 @@ class RouteExpansion3(RouteExpansion):
 #  the matrix M of dp
 #  the number of resources available to A at the beginning of the game, k    
 #==============================================================================
-def printDPMatrix(M, k):
+def printDPMatrix(M, k, G):
     for l in range(np.shape(M)[0]):
         for i in range(np.shape(M)[1]):
             for j in range(np.shape(M)[2]):
@@ -184,5 +166,5 @@ def printDPMatrix(M, k):
                         if r.isNone():
                             continue;
                         elif (r.attacksLeft(k) == 0):
-                            r.printRouteExpansion();
+                            r.printRouteExpansion(G);
     

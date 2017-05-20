@@ -122,16 +122,29 @@ class RouteExpansion3(RouteExpansion):
             r_new_route_si = np.array(self.route_si);
         for el in self.history:
             for t in el[0]:
-                condition1 = t in r_new_route_si[el[1]:(el[1]+G.getVertex(t).getDeadline()+1)]; # the target has not been covered
+                condition1 = t not in r_new_route_si[el[1]:(el[1]+G.getVertex(t).getDeadline()+1)]; # the target has not been covered
                 condition2 = j-el[1] > G.getVertex(t).getDeadline() or (j-el[1] >= G.getVertex(t).getDeadline() and r_new_route_si[-1]!=t); # there's no time to cover it anymore
                 condition3 = t not in expired_targets; # once it has expired, it is done                
-                if not(condition1) and condition2 and condition3: #if t is covered in the window where it can be covered
+                if condition1 and condition2 and condition3: #if t is covered in the window where it can be covered
                      expired_targets = np.append(expired_targets, t);
         return np.unique(expired_targets.astype(int));
+#==============================================================================
+#     calculate the expired targets on G, at the end of the game, i.e. after the covering route has been created and followed by D
+#     takes as input:
+#      the graph G
+#      the position v where D is at time j
+#      the time passed j since the beginning of the game
+#     it returns:
+#      the list of expired targets at the end of the game
+#==============================================================================  
+    def expiredTargetsAtTheEnd(self, G, v, j): 
+        expired_targets = self.calculateExpiredTargets(G, v, j);
+        targets_alive = self.getTargetsUnderAttack(G, j);
+        return np.append(expired_targets, np.setdiff1d(targets_alive, self.route_ij[1:]));
 #   function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self, G):
         print("=====================================");
-        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.calculateExpiredTargets(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.expiredTargetsAtTheEnd(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
         print("=====================================");
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            

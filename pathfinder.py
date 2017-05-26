@@ -35,14 +35,11 @@ def PathFinder2(G, v, t):
     M[v][0].expandRoute(v, None, G.getVertex(v).getValue() if v==t else 0);
     M[v][0].printRouteExpansion();
     for j in range(n-1): # j+1 at line 93(routes expansion) needs j to go till n-1
-        #print("TIME ", j);        
         for i in range(n):
-            #print("CELL",i);
             if M[i][j].isNone():#i.e. the cell M(i,j) is not defined
                 continue;
             r_c_min, u_min = ap.AttackPrediction2(G, i, t, j);#suppose the last attack while D is on vertex i at time j (the first attack has been performed on t)          
             r_c_min = r_c_min[0];#take just the route, not the cost            
-            #print(r_c_min, u_min);          
             M[i][j].expandRoute(M[i][j].getRoute_si(), r_c_min, min(u_min, M[i][j].getUtility()));#each cell will contain the route_ij which is the route that from i will cover the last target uder attack, and the relative utility 
             M[i][j].printRouteExpansion();
             #expand all the routes created so far in the new column of the dp matrix j+1            
@@ -84,17 +81,17 @@ def PathFinder(G, v, t, k):
             for i in range(n):
                 if M[l][i][j] is None: #this condition is to prevent the expansion of null cells of M
                     continue;
-                #We suppose from 1 to k-left attacks and we update M accoridng to this fact
-                # we can choose to modify M by passing its column (with all the layers) to AttackPrediction function
-                # or let the function return all the new routes with the respective layer and then modify M
-                #Anyway, we expect that after this passage we have M modified and ready to pass through the 'expand routes' passage                    
+                #We suppose from 1 to k-left attacks and we update M according to this fact
                 #print(i,j,l);
                 M = ap.AttackPrediction(G, i, j, l, M, k+1, target_dictionary); #this function calculates directly the content (in terms of routes) of all the new cells activated on M            
-                #M[l][i][j][0].printRouteExpansion(G);
+                M[l][i][j] = checkDominance(M, i, j, l); # eliminate all the dominated routes in a matrix cell M(i,j,l)
         #'expand routes' passage
         # remember that the domination of routes is done in this way: we expand a route if
         # the next cells doesnt contain a route whose utility is higher(for the defender)
         # and the targets under attacks are the same till that time 
+        # you may ask: and what if A decides to attack D waiting some steps?
+                # the answer is that we do not eliminate the route that we used to expand the others, so that's the case 
+                # you mentioned!
         for l in range(len(target_dictionary)):
             if l in stopping_layers:
                 continue;
@@ -135,6 +132,34 @@ def PathFinder(G, v, t, k):
     # then terminate  
     re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
     return;
+
+#==============================================================================
+# function that returns, given a cell of the dp matrix, only the routes that are not dominated by other routes
+#     takes as input:
+#         the cell of the dp matrix M, so M, i,j,l
+#     returns
+#         the modified cell according to the dominance
+#     please note that r dominates r' if they have very the same history and one of them has a utility which is better than the other one
+#==============================================================================
+def checkDominance(M, i, j, l):    
+    M_temp = list();
+    deleted = np.array([]);
+    if M[l][i][j] == None or len(M[l][i][j]) < 2:
+        return M[l][i][j];
+    else:
+        for n in range(len(M[l][i][j])):
+            for m in range(len(M[l][i][j])):
+                if n!=m and M[l][i][j][n].historyEqual(M[l][i][j][m]):
+                    if M[l][i][j][n].getUtility() >= M[l][i][j][m].getUtility():
+                        deleted = np.append(deleted, n);
+                        break;
+                    else:
+                        deleted = np.append(deleted, m);
+    for n in range(len(M[l][i][j])):
+        if n not in deleted:
+            M_temp.append(M[l][i][j][n]);
+    #print(len(deleted));
+    return M_temp;                 
     
 """
 Little testing to see if the algorithms work as expected
@@ -156,4 +181,4 @@ G.setAdjacents(v3,np.array([0,1,1,1,0]));
 G.setAdjacents(v4,np.array([1,1,1,1,1]));
 G.setAdjacents(v5,np.array([1,0,0,1,1]));
 
-PathFinder(G, 0, 1, 2);
+PathFinder(G, 1, 1, 3);

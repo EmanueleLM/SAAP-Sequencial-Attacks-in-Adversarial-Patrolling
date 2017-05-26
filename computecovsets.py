@@ -13,12 +13,15 @@ and returns the best route and utility for a given set of targets, from a a star
 
 We employ lists instead of numpy.array for storing routes since numpy is not optimized for 
 managing non-omogenous arrays (while for example we use numpy for the shortest paths matrix)
+
+What is a 'covset'?! [Dr. House]
 """
 
 import numpy as np
 import graph as gr
 import btree as bt
 import shortestpath as sp
+import copy as cp
 
 
 #==============================================================================
@@ -49,7 +52,7 @@ def computeCovSet(G, v, targets):
                 Q = list([]);#vector that will contain temporary route+expansions for a given q
                 W = list([]); #vector with all the feasible expansions for q
                 cost = q[1] + SP_cost[t][q[0][-1]]; #the cost of the route is the older cost plus the cost of the shortest path between the new target and the last elemente in the route (i.e. [-1])                                       
-                #see if we satisfy the three conditions in order to extend a route (see comments at teh beginning)
+                #see if we satisfy the three conditions in order to extend a route (see comments at the beginning)
                 condition1 = (t not in q[0]);#we don't choose a target already covered by the route q selected at this step
                 condition2 = (cost <= G.getVertex(t).getDeadline()); #the target is not expired 
                 condition3 = True;
@@ -61,38 +64,53 @@ def computeCovSet(G, v, targets):
                     W.append(t); #legal and feasible expansions for current route q
                 for w in W: #for all expansions, see if they are better than the current one (using a B-Tree)
                             # if so, subsistute them                    
-                    Q.append([np.append(q[0],w),cost.astype(int)]);
+                    Q.append([np.append(q[0],w), cost.astype(int)]);
                     U = btree.search(Q[-1][1],bt.purgeBinaryVector(bt.binaryVectorFromRoute(Q[-1][0],targets)));
                     if not U: #just take the depth of the tree where the nodes goes to the right(r contains the target)
                         C.append([np.append(q[0],w),cost]);
                         btree.update(C[-1][0],targets,btree.root,bt.binaryVectorFromRoute(C[-1][0],targets),C[-1][0]);#update the tree (maybe its better to do it in the search function?)
+        #print("\n\n",[c for c in C if len(c[0])==i+1]);
+        if i > 0:
+            C = purgeDominatedStrategies(C, i+1);
     #eventually append to each route the utility
     for c in C:
-        c.append(getUtilityFromRoute(G, c[0], targets));
-    
+        c.append(getUtilityFromRoute(G, c[0], targets));    
     return C;
 
 #==============================================================================
-# function that eliminates the diminated covering routes of dimensionality i(i.e. contain exactly i elements)
+# function that eliminates the dominated covering routes of dimensionality i(i.e. contain exactly i elements)
 #  a route r dominates another route r' iff r contains the same elements as r', the last element in both the routes is the same
 #  and the cost of r is lower(strictly) than the cost of r'
+#  if we have to choose between two identical routes (same lenght, same covered targets) we choose indifferently one of them
 # takes as input
-#  the set of covering routes C
-#  the size i of the routes that you want to be purged each other   
+#  the set of covering routes C  
+#  the current time step at which we want to apply dominance between routes 
 #==============================================================================
 def purgeDominatedStrategies(C, i):
-    C_temp = [r for r in C if len(r[0])==i];
-    for c in C_temp:
-        r_temp = np.sort(c[0]);
-        for c1 in C_temp:
-            if c[0][-1]==c1[0][-1]:#if the end of the route is the same
-                if np.array_equal(r_temp, np.sort(c1[0])):#if they contain the same elements
-                    if c[1] < c1[1]: #remove the one with the lower cost
-                        C.remove(c1);
+    # divide each route from its cost
+    C_temp = list();
+    routes = list(r[0] for r in C);
+    costs = np.array([r[1] for r in C]).astype(int);
+    deleted = np.array([]); # list of the index of the elements deleted so far
+    for n in range(len(routes)):
+        for m in range(len(routes)):
+            condition1 = len(routes[n]==i); # we just deal with the last layer of routes, i.e. the longest ones
+            condition2 = np.array_equal(np.sort(routes[n]), np.sort(routes[m])); # we want that the routes contains the same elements
+            condition3 =  m not in deleted and n not in deleted;            
+            if  condition1 and condition2 and condition3:
+                if routes[n][-1] == routes[m][-1] and n!=m:
+                    #print("We are going to confront ",  C[n], " with ", C[m]);
+                    if costs[n] <= costs[m]:
+                        deleted = np.append(deleted, m);
+                        #print("we eliminated ", routes[m], costs[m]);
                     else:
-                        C.remove(c); 
-                        break;#if we remove the former element, the cycle can't go on
-    return C;
+                        deleted = np.append(deleted, n);
+                        #print("we eliminated ", routes[n], costs[n]);
+    #print(deleted);
+    for n in range(len(C)):
+        if n not in deleted:
+            C_temp.append(C[n]);
+    return C_temp;
 
 #==============================================================================
 #function that computes the utility(for the Defender) associated to a route
@@ -143,10 +161,10 @@ Little testing to see if the algorithms work as expected
 print("\nStart ComputeCovSet Test Part:");          
 #create vertices        
 v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,3);
-v3 = gr.Vertex(1,1,3);
-v4 = gr.Vertex(1,0.6,3);
-v5 = gr.Vertex(1,0.5,3);
+v2 = gr.Vertex(1,0.5,5);
+v3 = gr.Vertex(1,1,5);
+v4 = gr.Vertex(1,0.6,5);
+v5 = gr.Vertex(1,0.5,5);
 
 #create graph (the issue of assigning a vertex number is given to the graph)
 G = gr.Graph(np.array([v1,v2,v3,v4,v5]));

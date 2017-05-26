@@ -146,6 +146,23 @@ class RouteExpansion3(RouteExpansion):
         print("=====================================");
         print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.expiredTargetsAtTheEnd(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
         print("=====================================");
+#==============================================================================
+#       function that calculates if two routes has the same history
+#        it takes as input:
+#           route, which is the route whose hisotry is compared to the one that invokes this function
+#        it returns:
+#           True or False wheter the histories are the equal
+#==============================================================================
+    def historyEqual(self, route):
+        if len(route.history) != len(self.history): # at least they should contain the same number of elements
+            return False;
+        for n in range(len(self.history)):
+                if self.history[n][1] != route.history[n][1]:
+                    return False;
+                else:
+                    if not(np.array_equal(np.sort(self.history[n][0]), np.sort(route.history[n][0]))):
+                        return False;
+        return True;
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
 #   function for distinguish between two vertices

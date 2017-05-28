@@ -158,22 +158,38 @@ def solveSRG(G, v, targets):
 """
 Little testing to see if the algorithms work as expected
 """    
-print("\nStart ComputeCovSet Test Part:");          
-#create vertices        
-v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,5);
-v3 = gr.Vertex(1,1,5);
-v4 = gr.Vertex(1,0.6,5);
-v5 = gr.Vertex(1,0.5,5);
-
-#create graph (the issue of assigning a vertex number is given to the graph)
-G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
-
-G.setAdjacents(v1,np.array([1,0,0,1,1]));
-G.setAdjacents(v2,np.array([0,1,1,1,0]));
-G.setAdjacents(v3,np.array([0,1,1,1,0]));
-G.setAdjacents(v4,np.array([1,1,1,1,1]));
-G.setAdjacents(v5,np.array([1,0,0,1,1]));
-
-print(computeCovSet(G, 0, np.array([1,2,3,4]))); # we calculate the best covering route on the graph generated previosuly
-print(solveSRG(G, 0, np.array([1,2,3,4]))); # we calculate the best covering route on the graph by solving the SRG problem
+verbose = False; # this variable controls whether the output is printed
+if verbose:
+    print("\nStart ComputeCovSet Test Part:");          
+    #create vertices        
+    #create vertices        
+    v1 = gr.Vertex(0,0,0);
+    v2 = gr.Vertex(1,0.5,4);
+    v3 = gr.Vertex(1,0.6,2);
+    v4 = gr.Vertex(1,0.7,3);
+    v5 = gr.Vertex(1,0.8,2);
+    v6 = gr.Vertex(1,0.9,3);
+    v7 = gr.Vertex(1,1,2);
+    v8 = gr.Vertex(0,0,0);
+    v9 = gr.Vertex(1,0.3,3);
+    v10 = gr.Vertex(0,0,0);
+    v11 = gr.Vertex(1,1,4);
+    
+    
+    #create graph (the issue of assigning a vertex number is given to the graph)
+    G = gr.Graph(np.array([v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11]));
+    
+    G.setAdjacents(v1,np.array([1,0,0,1,1,0,1,0,0,0,0]));
+    G.setAdjacents(v2,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+    G.setAdjacents(v3,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+    G.setAdjacents(v4,np.array([1,1,1,1,1,0,1,0,0,0,0]));
+    G.setAdjacents(v5,np.array([1,0,0,1,1,1,1,0,0,0,0]));
+    G.setAdjacents(v6,np.array([0,0,0,0,1,1,1,0,0,0,0]));
+    G.setAdjacents(v7,np.array([1,1,1,1,1,1,1,1,1,1,1]));
+    G.setAdjacents(v8,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v9,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v10,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v11,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    
+    print(computeCovSet(G, 0, np.array([1,2,3,4,5,6,8,10]))); # we calculate the best covering route on the graph generated previosuly
+    print(solveSRG(G, 0, np.array([1,2,3,4,5,6,8,10]))); # we calculate the best covering route on the graph by solving the SRG problem

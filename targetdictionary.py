@@ -84,11 +84,13 @@ def stringToList(string):
 """
 Little testing to see if the algorithms work as expected
 """  
-powerset_targets = list([5,7,9]); #create the list of elements
-dic = listToDictionary(powerset_targets, 3); #turn the list into a dictionary
-print(dic); #print whole the dictionary
-print(dic['']); #access to the empty element in the list, we expect 0 as output
-print(dic['5 7']); #access to the element formed by 5 and 7
-print(len(dic)); #number of elements in the dictionary
-print(dic[listToString([5,9])]); #transofrm a list into a dictionary entry and access its address in the dictionary
-print([x for x in stringToList('1 3 4')]); #transform a string in the address format into a list (no sort is done)
+verbose = False; # this variable controls whether the output is printed
+if verbose:
+    powerset_targets = list([5,7,9]); #create the list of elements
+    dic = listToDictionary(powerset_targets, 3); #turn the list into a dictionary
+    print(dic); #print whole the dictionary
+    print(dic['']); #access to the empty element in the list, we expect 0 as output
+    print(dic['5 7']); #access to the element formed by 5 and 7
+    print(len(dic)); #number of elements in the dictionary
+    print(dic[listToString([9,5])]); #transofrm a list into a dictionary entry and access its address in the dictionary
+    print([x for x in stringToList('1 3 4')]); #transform a string in the address format into a list (no sort is done)

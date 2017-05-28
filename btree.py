@@ -6,7 +6,7 @@ Created on Mon Apr 10 10:42:39 2017
 
 Binary Tree to deal with the routes, their expansions, their cost calculations
 
-Rise up this mornin', Smiled with the risin' sun, 'Tree' little birds. Pitch by my doorstep
+Rise up this mornin', Smiled with the risin' sun, 'Tree' little birds. Pitch by my doorstep [Bob Marley]
 """
 
 import numpy as np;
@@ -111,10 +111,7 @@ class BTree(object):
 #      the route in the original order (not ordered by indexvertex),on which we calculate the sp cost
 #==============================================================================
     def update(self, route, targets, node, v, oldroute):
-        #print(targets[0]);
-        #print(route[0]);
         if self.root is None: #if the tree is empty, create the first node (i.e. the root)
-            #print("create");
             route = np.sort(route); #oder route by indexvertex order
             targets = np.sort(targets); #order targets by indexvertex order
             self.root = Node(None, None, None, 0, 0, False);
@@ -123,22 +120,17 @@ class BTree(object):
             return;
         if v[0]==1: 
             if node.right is None: #there's no such a route that covers the target under exam
-                #print("right create");
                 node.right = Node(None, None, node, calculateCostOfRoute(oldroute, self.SP_cost), node.getHeight()+1, True);
-                #print("Cost of the route ",oldroute," is ", calculateCostOfRoute(oldroute, self.SP_cost));                
                 node.isleaf = False;#if we insert a new target on a route, the previous one is not still a route (or at least is strictly dominated)
                 return; #we assume that we call this function at each iteration (i.e. every time we update a route in the tree, we can at most extend it with one element)
             else:#it exists a route that covers that target, so let's go down the tree
-                #print("right go down");
                 return self.update(route[1:], targets[1:], node.right,v[1:],oldroute);
         else:
             if node.left is None: #in this case a target is not covered by a route, but another one which comes after that one (wrt the order imposed at the beginning on T) is so
-                #print("left create");                
                 node.left = Node(None, None, node, node.getCost(), node.getHeight()+1, False);#we use the getCost function to propagate the cost of a route(till that time) through the tree
                 node.isleaf = False;
                 return self.update(route, targets[1:], node.left, v[1:],oldroute);
             else:# in this case a route that does not cover a target already exists (but for sure that route will cover at most another target which comes after in T)
-                #print("left go down");                
                 return self.update(route, targets[1:], node.left,v[1:],oldroute);                
                 
 #==============================================================================
@@ -190,24 +182,26 @@ def calculateCostOfRoute(route, SP_cost):
 """
 Little testing to see if the algorithms work as expected
 """    
-#create the tree
-bt = BTree();
-#get the shortest path matrix 
-bt.getShortestPaths([[0,2,2,1,1],[2,0,1,1,2],[2,1,0,1,2],[1,1,1,0,1],[1,2,2,1,0]]);
-#this is how you can create a new path
-#first inizialize the binary vector route-targets
-#then call the update tree function
-v = np.array(binaryVectorFromRoute([0],[1,2,3,4])); #route that does not cover anything, just create the tree
-bt.update([0],[1,2,3,4],bt.root,v,[0]);#update the tree
-v = np.array(binaryVectorFromRoute([0,2],[1,2,3,4])); #route that covers target 2, starting from vertex 0
-bt.update([0,2],[1,2,3,4],bt.root,v,[0,2]);#update the tree, its cost should be 2 (according to SP matrix defined previously)
-
-
-v1 = np.array(binaryVectorFromRoute([0,2],[1,2,3,4]));#create the route that covers 0,2. It is present in the tree
-v2 = np.array(binaryVectorFromRoute([0,1],[1,2,3,4]));#create the route that covers 0,1. It is not present in the tree
- 
-  
-print(bt.search(2, purgeBinaryVector(v1)));#we see if there a route that covers 0,2 with a cost lower than 2(e.g. 1), we expect that there's not such a route(i.e. in the tree there's a better route)
-print(bt.search(1, purgeBinaryVector(v1)));#we see if there a route that covers 0,2 with a cost lower than 0(e.g. -1), we expect that there's such a route (i.e. in the tree there's no better route) 
-                                                    #we expect that from now on route [0,2] will cost 0  
-print(bt.search(0, purgeBinaryVector(v2)));#we see if there's a route that covers 0,1: any cost should return false (even negative) since that route is not present (so we give it a low cost)
+verbose = False; # this variable controls whether the output is printed
+if verbose:
+    #create the tree
+    bt = BTree();
+    #get the shortest path matrix 
+    bt.getShortestPaths([[0,2,2,1,1],[2,0,1,1,2],[2,1,0,1,2],[1,1,1,0,1],[1,2,2,1,0]]);
+    #this is how you can create a new path
+    #first inizialize the binary vector route-targets
+    #then call the update tree function
+    v = np.array(binaryVectorFromRoute([0],[1,2,3,4])); #route that does not cover anything, just create the tree
+    bt.update([0],[1,2,3,4],bt.root,v,[0]);#update the tree
+    v = np.array(binaryVectorFromRoute([0,2],[1,2,3,4])); #route that covers target 2, starting from vertex 0
+    bt.update([0,2],[1,2,3,4],bt.root,v,[0,2]);#update the tree, its cost should be 2 (according to SP matrix defined previously)
+    
+    
+    v1 = np.array(binaryVectorFromRoute([0,2],[1,2,3,4]));#create the route that covers 0,2. It is present in the tree
+    v2 = np.array(binaryVectorFromRoute([0,1],[1,2,3,4]));#create the route that covers 0,1. It is not present in the tree
+     
+      
+    print(bt.search(2, purgeBinaryVector(v1)));#we see if there a route that covers 0,2 with a cost lower than 2(e.g. 1), we expect that there's not such a route(i.e. in the tree there's a better route)
+    print(bt.search(1, purgeBinaryVector(v1)));#we see if there a route that covers 0,2 with a cost lower than 0(e.g. -1), we expect that there's such a route (i.e. in the tree there's no better route) 
+                                                        #we expect that from now on route [0,2] will cost 0  
+    print(bt.search(0, purgeBinaryVector(v2)));#we see if there's a route that covers 0,1: any cost should return false (even negative) since that route is not present (so we give it a low cost)

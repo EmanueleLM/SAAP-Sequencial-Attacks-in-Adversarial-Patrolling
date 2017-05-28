@@ -7,7 +7,7 @@ Created on Thu Apr  6 10:47:31 2017
 Class that manages graphs and vertices, used to shape our scenario of sequencial
 attacks in adversarial patrolling
 
-I, know a place, where the 'graph' is really greener
+I, know a place, where the 'graph' is really greener! [Katy Perry]
 """
 
 import shortestpath as sp
@@ -151,41 +151,63 @@ Little testing to see if the algorithms work as expected
 """              
 #create vertices   
 #please note that in this graph, starting from vertex 0, it is impossible to
-#cover targets 1,4,2 together if a simultaneous attack is performed on all the three targets     
+#cover targets 1,4,2 together if a simultaneous attack is performed on all the three targets           
 v1 = Vertex(0,0,0);
-v2 = Vertex(1,0.5,3);
-v3 = Vertex(1,1,3);
-v4 = Vertex(1,0.6,3);
-v5 = Vertex(1,0.5,3);
+v2 = Vertex(1,0.5,4);
+v3 = Vertex(1,0.6,2);
+v4 = Vertex(1,0.7,3);
+v5 = Vertex(1,0.8,2);
+v6 = Vertex(1,0.9,3);
+v7 = Vertex(1,1,2);
+v8 = Vertex(0,0,0);
+v9 = Vertex(1,0.3,3);
+v10 = Vertex(0,0,0);
+v11 = Vertex(1,1,4);
+
 
 #create graph (the issue of assigning a vertex number is given to the graph)
-G = Graph(np.array([v1,v2,v3,v4,v5]));
+G = Graph(np.array([v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11]));
 
-G.setAdjacents(v1,np.array([1,0,0,1,1]));
-G.setAdjacents(v2,np.array([0,1,1,1,0]));
-G.setAdjacents(v3,np.array([0,1,1,1,0]));
-G.setAdjacents(v4,np.array([1,1,1,1,1]));
-G.setAdjacents(v5,np.array([1,0,0,1,1]));
+G.setAdjacents(v1,np.array([1,0,0,1,1,0,1,0,0,0,0]));
+G.setAdjacents(v2,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+G.setAdjacents(v3,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+G.setAdjacents(v4,np.array([1,1,1,1,1,0,1,0,0,0,0]));
+G.setAdjacents(v5,np.array([1,0,0,1,1,1,1,0,0,0,0]));
+G.setAdjacents(v6,np.array([0,0,0,0,1,1,1,0,0,0,0]));
+G.setAdjacents(v7,np.array([1,1,1,1,1,1,1,1,1,1,1]));
+G.setAdjacents(v8,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+G.setAdjacents(v9,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+G.setAdjacents(v10,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+G.setAdjacents(v11,np.array([0,0,0,0,0,0,1,1,1,1,1]));
 
-print("\nVertices' adjacencies:");
-v1.printAdjacents();
-v2.printAdjacents();   
-v3.printAdjacents();  
-v4.printAdjacents();  
-v5.printAdjacents();
-
-print("\n Targets on G are:");
-print([int(i) for i in G.getTargets()]);
-
-print("\nAdjacency Matrix:");
-print(G.getAdjacencyMatrix()); 
-
-#obtain the shortest path matrix (through a classical sp algorithm)
-n = np.size(G.getAdjacencyMatrix()[0]);
-SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
-
-print("\n Shortest path matrix:");
-print(SP);
-
-print("\n Shortest Path's cost Matrix:");
-print(SP_cost);
+verbose = False; # this variable controls whether the output is printed
+if verbose:
+    print("\nVertices' adjacencies:");
+    v1.printAdjacents();
+    v2.printAdjacents();   
+    v3.printAdjacents();  
+    v4.printAdjacents();  
+    v5.printAdjacents();
+    v6.printAdjacents();
+    v7.printAdjacents();   
+    v8.printAdjacents();  
+    v9.printAdjacents();  
+    v10.printAdjacents();
+    v11.printAdjacents();
+    
+    
+    print("\n Targets on G are:");
+    print([int(i) for i in G.getTargets()]);
+    
+    print("\nAdjacency Matrix:");
+    print(G.getAdjacencyMatrix()); 
+    
+    #obtain the shortest path matrix (through a classical sp algorithm)
+    n = np.size(G.getAdjacencyMatrix()[0]);
+    SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
+    
+    print("\n Shortest path matrix:");
+    print(SP);
+    
+    print("\n Shortest Path's cost Matrix:");
+    print(SP_cost);

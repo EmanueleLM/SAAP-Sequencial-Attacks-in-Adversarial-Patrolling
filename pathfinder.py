@@ -18,6 +18,7 @@ import attackprediction as ap
 import graph as gr
 import targetdictionary as td
 import routeexpansion as re
+import time
 
 #==============================================================================
 # PathFinder2 function is the function that returns the equilibrium path in a SRG game with k=2 attacks
@@ -70,6 +71,7 @@ def PathFinder2(G, v, t):
 def PathFinder(G, v, t, k):
     n = len(G.getVertices()); #number of vertices on G, used to size dp matrix M
     target_dictionary = td.listToDictionary(G.getTargets(), k+1); #transform the list of targets into a power set and then into a dictionary of targets
+    #print(target_dictionary);    
     M = np.array([[[None for j in range(n)] for i in range(n)]for l in range(len(target_dictionary))]);
     M[0][v][0] = list([re.RouteExpansion3(np.array([v]), np.array([]), 0, np.array([v]) if v==t else np.array([]), list([[np.array([t]),0]]))]);
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]);#put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore (this is a sufficient condition, not necessary since we can have repetead attacks on the same target)   
@@ -100,7 +102,7 @@ def PathFinder(G, v, t, k):
                     continue;
                 adjacentvertices =  np.array(G.getVertex(i).getAdjacents()); #calculate adjacent vertices to vertex i on G
                 for r in M[l][i][j]: #for each route in cell M[l][i][j]
-                    if r.isNone() or r.attacksLeft(k+1)==0: #this condition is to prevent the expansion of null routes or routes where the number of resources left to A is zero
+                    if r.isNone() or r.attacksLeft(k+1)==0 or len(r.getTargetsUnderAttack(G, j))==0: #this condition is to prevent the expansion of null routes or routes where the number of resources left to A is zero
                         continue; 
                     for v1 in adjacentvertices:
                         if v1 in r.getTargetsUnderAttack(G, j):
@@ -130,7 +132,7 @@ def PathFinder(G, v, t, k):
 
     # extract the utilities of the game
     # then terminate  
-    re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
+    #re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
     return;
 
 #==============================================================================
@@ -164,21 +166,43 @@ def checkDominance(M, i, j, l):
 """
 Little testing to see if the algorithms work as expected
 """    
-print("\nStart PathFinder Test Part::");          
-#create vertices        
-v1 = gr.Vertex(0,0,0);
-v2 = gr.Vertex(1,0.5,2);
-v3 = gr.Vertex(1,0.6,2);
-v4 = gr.Vertex(1,0.7,2);
-v5 = gr.Vertex(1,0.8,2);
-
-#create graph (the issue of assigning a vertex number is given to the graph)
-G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
-
-G.setAdjacents(v1,np.array([1,0,0,1,1]));
-G.setAdjacents(v2,np.array([0,1,1,1,0]));
-G.setAdjacents(v3,np.array([0,1,1,1,0]));
-G.setAdjacents(v4,np.array([1,1,1,1,1]));
-G.setAdjacents(v5,np.array([1,0,0,1,1]));
-
-PathFinder(G, 1, 1, 3);
+verbose = True; # this variable controls whether the output is printed
+if verbose:
+    print("\nStart PathFinder Test Part::");          
+    #create vertices        
+    v1 = gr.Vertex(0,0,0);
+    v2 = gr.Vertex(1,0.5,4);
+    v3 = gr.Vertex(1,0.6,2);
+    v4 = gr.Vertex(1,0.7,3);
+    v5 = gr.Vertex(1,0.8,2);
+    v6 = gr.Vertex(1,0.9,3);
+    v7 = gr.Vertex(1,1,2);
+    v8 = gr.Vertex(0,0,0);
+    v9 = gr.Vertex(1,0.3,3);
+    v10 = gr.Vertex(0,0,0);
+    v11 = gr.Vertex(1,1,4);
+    
+    #create graph (the issue of assigning a vertex number is given to the graph)
+    G = gr.Graph(np.array([v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11]));
+    
+    G.setAdjacents(v1,np.array([1,0,0,1,1,0,1,0,0,0,0]));
+    G.setAdjacents(v2,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+    G.setAdjacents(v3,np.array([0,1,1,1,0,0,1,0,0,0,0]));
+    G.setAdjacents(v4,np.array([1,1,1,1,1,0,1,0,0,0,0]));
+    G.setAdjacents(v5,np.array([1,0,0,1,1,1,1,0,0,0,0]));
+    G.setAdjacents(v6,np.array([0,0,0,0,1,1,1,0,0,0,0]));
+    G.setAdjacents(v7,np.array([1,1,1,1,1,1,1,1,1,1,1]));
+    G.setAdjacents(v8,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v9,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v10,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    G.setAdjacents(v11,np.array([0,0,0,0,0,0,1,1,1,1,1]));
+    
+    initial_vertex = 0;
+    initial_target = 1;
+    for i in range(1,5):
+        start_time = time.time();
+        PathFinder(G, initial_vertex, initial_target, i);
+        print("Instance with k= ", i+1);
+        print("Starting on vertex ", initial_vertex);
+        print("Initial target ", initial_target);
+        print("--- %s seconds ---" % (time.time() - start_time));

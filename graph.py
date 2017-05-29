@@ -145,64 +145,65 @@ class Graph(object):
                 T = np.append(T,v.vertex_number);
         return T.astype(int);
         
+#==============================================================================
+# function that generates a random adjacency matrix with the following input
+#  n is the size of the matrix
+#  p in the probability that a node is connected to another one (we assume indepent the prob that i is connected to j, and i is connected to w different from j)    
+# it returns
+#  the adjacency matrix M
+#==============================================================================
+def generateRandMatrix(n, p):
+    l = 0;
+    M = np.array([[0 for i in range(n)] for j in range(n)]);
+    for i in range(n):
+        M[i][i] = 1;
+    for i in range(n):
+        for j in range(l):
+            if np.random.rand() <= p:
+                M[i][j] = 1;
+                M[j][i] = 1;
+        l += 1;
+    return M;
+
+#==============================================================================
+# function that creates a graph that is composed by n vertices whose values is between (0,1] 
+# and whose deadline is uniformely distributed between 1 and max_deadline
+# takes as input:
+#     the adjacency matrix M
+#     the number of vertices in the graph, n
+#     the probability p that a vertex is a target on G
+#     the maximum deadline a target can have
+# it returns
+#     the graph generated with the previous carachteristics
+# please note that
+#     the deadlines are uniformely distributed between [1, max_deadline]
+#==============================================================================
+def generateRandomGraph(M, n, p, max_deadline):
+    vertices = np.array([]);
+    for i in range(n):
+        if np.random.rand() <= p:
+            deadline = np.random.randint(1, max_deadline);
+            value = np.random.rand();
+            v = Vertex(1, value, deadline);
+        else:
+            v = Vertex(0,0,0);
+        vertices = np.append(vertices, v);
+    G = Graph(vertices);
+    for i in range(n):
+        G.setAdjacents(vertices[i], M[i]);
+    return G;
+        
  
 """
 Little testing to see if the algorithms work as expected
-"""              
-#create vertices   
-#please note that in this graph, starting from vertex 0, it is impossible to
-#cover targets 1,4,2 together if a simultaneous attack is performed on all the three targets           
-v1 = Vertex(0,0,0);
-v2 = Vertex(1,0.5,4);
-v3 = Vertex(1,0.6,2);
-v4 = Vertex(1,0.7,3);
-v5 = Vertex(1,0.8,2);
-v6 = Vertex(1,0.9,3);
-v7 = Vertex(1,1,2);
-v8 = Vertex(0,0,0);
-v9 = Vertex(1,0.3,3);
-v10 = Vertex(0,0,0);
-v11 = Vertex(1,1,4);
-
-
-#create graph (the issue of assigning a vertex number is given to the graph)
-G = Graph(np.array([v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11]));
-
-G.setAdjacents(v1,np.array([1,0,0,1,1,0,1,0,0,0,0]));
-G.setAdjacents(v2,np.array([0,1,1,1,0,0,1,0,0,0,0]));
-G.setAdjacents(v3,np.array([0,1,1,1,0,0,1,0,0,0,0]));
-G.setAdjacents(v4,np.array([1,1,1,1,1,0,1,0,0,0,0]));
-G.setAdjacents(v5,np.array([1,0,0,1,1,1,1,0,0,0,0]));
-G.setAdjacents(v6,np.array([0,0,0,0,1,1,1,0,0,0,0]));
-G.setAdjacents(v7,np.array([1,1,1,1,1,1,1,1,1,1,1]));
-G.setAdjacents(v8,np.array([0,0,0,0,0,0,1,1,1,1,1]));
-G.setAdjacents(v9,np.array([0,0,0,0,0,0,1,1,1,1,1]));
-G.setAdjacents(v10,np.array([0,0,0,0,0,0,1,1,1,1,1]));
-G.setAdjacents(v11,np.array([0,0,0,0,0,0,1,1,1,1,1]));
-
-verbose = False; # this variable controls whether the output is printed
-if verbose:
-    print("\nVertices' adjacencies:");
-    v1.printAdjacents();
-    v2.printAdjacents();   
-    v3.printAdjacents();  
-    v4.printAdjacents();  
-    v5.printAdjacents();
-    v6.printAdjacents();
-    v7.printAdjacents();   
-    v8.printAdjacents();  
-    v9.printAdjacents();  
-    v10.printAdjacents();
-    v11.printAdjacents();
-    
-    
+"""               
+verbose = True; # this variable controls whether the output is printed
+if verbose: 
+    G = generateRandomGraph(generateRandMatrix(40, 0.5), 40, 0.3, 10); # generate the graph
     print("\n Targets on G are:");
     print([int(i) for i in G.getTargets()]);
-    
-    print("\nAdjacency Matrix:");
-    print(G.getAdjacencyMatrix()); 
-    
-    #obtain the shortest path matrix (through a classical sp algorithm)
+    print(G.getAdjacencyMatrix());
+        #obtain the shortest path matrix (through a classical sp algorithm)
     n = np.size(G.getAdjacencyMatrix()[0]);
     SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
     
@@ -211,3 +212,4 @@ if verbose:
     
     print("\n Shortest Path's cost Matrix:");
     print(SP_cost);
+    

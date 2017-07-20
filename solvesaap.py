@@ -18,7 +18,7 @@ import graph as gr
 path = ""; # path to find the graphs' description
 graphs = list(); # list that contains the name of each graph file in txt format
 k = 3; # number of resources we want the solver solves for each instance of the graphs specified in graphs
-graph_tags = list(['G', 'A', 'V', 'V0', 'T0', '#V', '#T', 'DENSITY', 'TOPOLOGY']);
+graph_tags = list(['G', 'A', 'VERTICES', 'V0', 'T0', '#V', '#T', 'DENSITY', 'TOPOLOGY']);
 other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'ROUTES']);
 
 
@@ -28,7 +28,7 @@ other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'ROUTES
 # returns a file .dat that contains all the routes generated and the best route associated to the equilibrium path and its utility
 #==============================================================================
 def solveSAAP(filepath):
-    G, v, t, topology = createGraphFromFile(filepath); # returns in G the graph, in v the initial vertex where D stays at the beginning of the game, and the initial target attack t          
+    G, vertices, v, t, topology = createGraphFromFile(filepath); # returns in G the graph, in v the initial vertex where D stays at the beginning of the game, and the initial target attack t          
     for i in range(k):
         #routes = pf.PathFinder(G, v, t, k); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
         # write all the stuff to a file in a xml pseudo-format
@@ -40,6 +40,20 @@ def solveSAAP(filepath):
             g_tags.append(et.SubElement(g_tags[0], graph_tags[j])); # every element of the graph is a subelement of the graph itself
         for j in range(len(other_tags)):
             o_tags.append(et.SubElement(root, other_tags[j]));
+        g_tags[1].text = str(np.array(G.getAdjacencyMatrix()));
+        g_tags[2].text = str(vertices);
+        g_tags[3].text = str(v);        
+        g_tags[4].text = str(t);
+        g_tags[5].text = str(len(vertices));
+        g_tags[6].text = str(len(G.getTargets()));
+        g_tags[7].text = str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())));
+        g_tags[8].text = topology;
+        o_tags[0].text = str(i+1);
+        # fill this section up with the other o_tags
+        # o_tags[1] =
+        # o_tags[2] =
+        # o_tags[3] = 
+        # ...
         tree = et.ElementTree(root);
         tree.write("C:\\Users\\Ga\\Desktop\\"+"topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())))+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
     return;
@@ -71,19 +85,23 @@ def solveSAAP(filepath):
 #     the initial vertex is vertex whose id is 2, i.e. the third(and last) vertex in G
 #     the initial target under attack is vertex whose index is 0, i.e. the first vertex on G
 #     the topology of the graph ('graph' if it's not a specific topology, 'crique', 'line', 'start' etc. otherwise)
-# the function returns a graph G, the intial vertex v and the initial target under attack t that can be used to invoke PathFinder
+# the function returns 
+#       a graph G, 
+#       the vertices that compose the graph (each one specify if it's a vertex or a target, its value and its deadline)
+#       the intial vertex v  
+#       the initial target under attack t that can be used to invoke PathFinder
+#       
 #==============================================================================
 def createGraphFromFile(filepath):
-    elements_check = ["A", "V", "V0", "T0", "TOPOLOGY"]; # elements to check if all the graph's elements are present in the file 
+#    elements_check = ["A", "V", "V0", "T0", "TOPOLOGY"]; # elements to check if all the graph's elements are present in the file 
     tree = et.parse(filepath);
     root = tree.getroot();
     # check if everything is ok with the specification file, otherwise exit
-    for check in range(len(elements_check)):
-        if str(elements_check[check])!=str(root[check].tag):
-            print("Missing ", elements_check[check] ,"or troubles with order");
-            exit();
+#    for check in range(len(elements_check)):
+#        if str(elements_check[check])!=str(root[check].tag):
+#            print("Missing ", elements_check[check] ,"or troubles with order");
+#            exit();
     # create the empty Graph and the adjacency matrix by parsing the file (thanks to eval, even if I should not use it :P)
-    
     adj_matrix = np.array(eval(root[0].text)); 
     vertices = np.array(eval(root[1].text)); 
     V = list();
@@ -95,7 +113,7 @@ def createGraphFromFile(filepath):
     for v in vertices:
         G.setAdjacents(V[n], np.array(adj_matrix[n]));
         n += 1;       
-    return [G, int(root[2].text), int(root[3].text), root[4].text]; # return the graph, the initial vertex where D stays and the iinitial attack target
+    return [G, vertices, int(root[2].text), int(root[3].text), root[4].text]; # return the graph, the initial vertex where D stays and the iinitial attack target
     
 """
 Little testing to see if the algorithms work as expected

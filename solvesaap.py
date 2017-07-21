@@ -191,5 +191,14 @@ Little testing to see if the algorithms work as expected
 """    
 verbose = True; # this variable controls whether the output is printed
 if verbose:
-    [printSaapDOM(i, True) for i in solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt")]
-    print(fromXml2Aggregate('C:\\Users\\Ga\\Desktop\\', '_topology_graph_vertices_5_density_0.4_V0_2_T0_0_resources_2'));
+    data_to_find = ['TOPOLOGY', 'NUM_V', 'NUM_T', 'K', 'EXEC_TIME', 'UTILITY', 'LENGTH_EQ_PATH', 'AVG_LENGTH_PATH', 'DENSITY'];
+    [printSaapDOM(i, True) for i in solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt")];
+    f = open("aggregate.dat", "w");
+    prefix = str();
+    for i in data_to_find:
+        prefix += str(i)+'\t';
+    f.write(prefix + '\n');
+    for i in range(1,k+1):
+        line = fromXml2Aggregate('C:\\Users\\Ga\\Desktop\\', '_topology_graph_vertices_5_density_0.4_V0_2_T0_0_resources_'+str(i));
+        f.write(str(line)+'\n');
+    f.close();

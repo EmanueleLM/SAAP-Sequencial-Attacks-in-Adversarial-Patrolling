@@ -15,14 +15,21 @@ import numpy as np
 import xml.etree.ElementTree as et
 import graph as gr
 from xml.dom import minidom
+import time
 
 input_path = ""; # path to find the graphs' description
 output_path  = "C:\\Users\\Ga\\Desktop\\"; # path to store the output in pseudo-xml format
 graphs = list(); # list that contains the name of each graph file in txt format
 k = 3; # number of resources we want the solver solves for each instance of the graphs specified in graphs
+# complete description of each tag in our xml file (intermediate aggregate file)
+#
+# .. TO_DO
+#
 graph_tags = list(['G', 'A', 'VERTICES', 'V0', 'T0', 'NUM_V', 'NUM_T', 'DENSITY', 'TOPOLOGY']);
-other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'ROUTES']);
+other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'EXEC_TIME', 'ROUTES']);
 
+aggregate_filepath = "C:\\Users\\Ga\\Desktop\\"; # filepath to the aggregate (.dat) file
+aggregate_output = "aggregate.dat"; # name of the aggregate file
 
 #==============================================================================
 # function that invokes pathfinder for a given specification of the SAAP game (Graph, initial vertex, initial target)
@@ -34,7 +41,9 @@ def solveSAAP(filepath):
     files = list();
     G, vertices, v, t, topology = createGraphFromFile(filepath); # returns in G the graph, in v the initial vertex where D stays at the beginning of the game, and the initial target attack t          
     for i in range(k):
+        start_time = time.time();
         routes = pf.PathFinder(G, v, t, i); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
+        exec_time = (time.time() - start_time); # calculate execution time (little overhead introduced by returning of the function, still not important since we are facing an exponential problem)        
         # write all the stuff to a file in a xml pseudo-format
         g_tags = list();
         o_tags = list();
@@ -60,7 +69,8 @@ def solveSAAP(filepath):
         # o_tags[2].text =
         # o_tags[3].text = 
         # ...
-        o_tags[6].text = str(routes);
+        o_tags[6].text = str(exec_time);
+        o_tags[7].text = str(routes);
         tree = et.ElementTree(root);
         files.append(output_path+"_topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())))+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
         tree.write(files[-1]);
@@ -157,6 +167,24 @@ def prettify(elem):
 #==============================================================================
 def getRootElement(filepath):
     return et.parse(filepath).getroot();
+#==============================================================================
+# function that turns a xml file into aggregate data, useful to plot the data
+#     takes as input the result of a saap instance as filepath + filename
+#     returns a new line in the aggregate.dat file file that is composed in this way:
+#         filename num_nodes num_targets resources exec_time utility length_eq_path average_length_path density 
+#==============================================================================
+def fromXml2Aggregate(filepath, filename):
+    data_to_find = ['TOPOLOGY', 'NUM_V', 'NUM_T', 'K', 'EXEC_TIME', 'UTILITY', 'LENGTH_EQ_PATH', 'AVG_LENGTH_PATH', 'DENSITY'];
+    result = list([filename]);
+    root = et.parse(filepath+filename).getroot();
+    for i in data_to_find:
+        if root[0].find(str(i)) != None:
+            result.append(root[0].find(i).text);
+        else:
+            if root.find(i) != None:
+                result.append(root.find(i).text);
+    return result;
+    
     
 """
 Little testing to see if the algorithms work as expected
@@ -164,3 +192,4 @@ Little testing to see if the algorithms work as expected
 verbose = True; # this variable controls whether the output is printed
 if verbose:
     [printSaapDOM(i, True) for i in solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt")]
+    print(fromXml2Aggregate('C:\\Users\\Ga\\Desktop\\', '_topology_graph_vertices_5_density_0.4_V0_2_T0_0_resources_2'));

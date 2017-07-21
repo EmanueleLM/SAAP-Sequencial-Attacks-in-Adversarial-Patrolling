@@ -14,23 +14,27 @@ import pathfinder as pf
 import numpy as np
 import xml.etree.ElementTree as et
 import graph as gr
+from xml.dom import minidom
 
-path = ""; # path to find the graphs' description
+input_path = ""; # path to find the graphs' description
+output_path  = "C:\\Users\\Ga\\Desktop\\"; # path to store the output in pseudo-xml format
 graphs = list(); # list that contains the name of each graph file in txt format
 k = 3; # number of resources we want the solver solves for each instance of the graphs specified in graphs
-graph_tags = list(['G', 'A', 'VERTICES', 'V0', 'T0', '#V', '#T', 'DENSITY', 'TOPOLOGY']);
+graph_tags = list(['G', 'A', 'VERTICES', 'V0', 'T0', 'NUM_V', 'NUM_T', 'DENSITY', 'TOPOLOGY']);
 other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'ROUTES']);
 
 
 #==============================================================================
 # function that invokes pathfinder for a given specification of the SAAP game (Graph, initial vertex, initial target)
 #     and solves it for the instances of sequencial attacks that go from 1 to k
-# returns a file .dat that contains all the routes generated and the best route associated to the equilibrium path and its utility
+#     creates a "dom"-like structure that is used to store all the salient elements of the saap solution
+# returns a list of the files that contains the results of the various saap instances
 #==============================================================================
 def solveSAAP(filepath):
+    files = list();
     G, vertices, v, t, topology = createGraphFromFile(filepath); # returns in G the graph, in v the initial vertex where D stays at the beginning of the game, and the initial target attack t          
     for i in range(k):
-        #routes = pf.PathFinder(G, v, t, k); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
+        routes = pf.PathFinder(G, v, t, i); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
         # write all the stuff to a file in a xml pseudo-format
         g_tags = list();
         o_tags = list();
@@ -40,6 +44,7 @@ def solveSAAP(filepath):
             g_tags.append(et.SubElement(g_tags[0], graph_tags[j])); # every element of the graph is a subelement of the graph itself
         for j in range(len(other_tags)):
             o_tags.append(et.SubElement(root, other_tags[j]));
+        # follow the order in graph_tags to see what's the content of each of the following element
         g_tags[1].text = str(np.array(G.getAdjacencyMatrix()));
         g_tags[2].text = str(vertices);
         g_tags[3].text = str(v);        
@@ -48,15 +53,18 @@ def solveSAAP(filepath):
         g_tags[6].text = str(len(G.getTargets()));
         g_tags[7].text = str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())));
         g_tags[8].text = topology;
+        # follow the order in other_tags to see what's the content of each of the following element
         o_tags[0].text = str(i+1);
         # fill this section up with the other o_tags
-        # o_tags[1] =
-        # o_tags[2] =
-        # o_tags[3] = 
+        # o_tags[1].text =
+        # o_tags[2].text =
+        # o_tags[3].text = 
         # ...
+        o_tags[6].text = str(routes);
         tree = et.ElementTree(root);
-        tree.write("C:\\Users\\Ga\\Desktop\\"+"topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())))+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
-    return;
+        files.append(output_path+"_topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())))+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
+        tree.write(files[-1]);
+    return files;
 #==============================================================================
 # function that create a graph G from a file that specifies the adjacency matrix at first
 #     the initial vertex v, the first target under attack t and how the graph is (vertices, targets, their values and deadlines..)
@@ -114,10 +122,45 @@ def createGraphFromFile(filepath):
         G.setAdjacents(V[n], np.array(adj_matrix[n]));
         n += 1;       
     return [G, vertices, int(root[2].text), int(root[3].text), root[4].text]; # return the graph, the initial vertex where D stays and the iinitial attack target
+#==============================================================================
+# function that given a xml result coming from a saap solution, prints on screen all the xml file 
+#     takes as input the filepath of the xml file
+#     returns none
+#     please note that if verbose is set to True it will print out all the routes generated (usually a lot)
+#     otherwise it does not print them
+#==============================================================================
+def printSaapDOM(filepath, verbose):
+    root = et.parse(filepath).getroot();
+    for j in root[0]:
+        print(j.tag);
+        print(j.text, "\n");  
+    if verbose:
+        nop = len(root);
+    else:
+        nop = -1;
+    for i in root[1:nop]:
+        print(i.tag);
+        print(i.text, "\n");
+#==============================================================================
+# function that "prettifies" the output
+#    takes as input the element in ElementTree to be prettyfied
+#    returns the string prettified
+#==============================================================================
+def prettify(elem):
+    rough_string = et.tostring(elem, 'utf-8');
+    reparsed = minidom.parseString(rough_string);
+    return reparsed.toprettyxml(indent="\t"); 
+#==============================================================================
+# function that returns the root of the xml file, given the path of the xml file
+#     it takes as input the xml file
+#     it returns the root element of the file
+#==============================================================================
+def getRootElement(filepath):
+    return et.parse(filepath).getroot();
     
 """
 Little testing to see if the algorithms work as expected
 """    
 verbose = True; # this variable controls whether the output is printed
 if verbose:
-    solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt");
+    [printSaapDOM(i, True) for i in solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt")]

@@ -9,18 +9,18 @@ takes as input a series of graphs encoded in a XML file filled up with an adjace
 encoded as type of node (simple vertex or target), its value (0 if it's not a target, between 0 and 1
 if it's a target) and a deadline (0 if it's a vertex, greater than zero and integer if it's a target)
 """
-
 import pathfinder as pf
 import numpy as np
 import xml.etree.ElementTree as et
-import graph as gr
 from xml.dom import minidom
+import graph as gr
+import os.path
 import time
 
-input_path = ""; # path to find the graphs' description
+graphs_input_path = "C:\\Users\\Ga\\Desktop\\"; # path to find the graphs' description
 output_path  = "C:\\Users\\Ga\\Desktop\\"; # path to store the output in pseudo-xml format
 graphs = list(); # list that contains the name of each graph file in txt format
-k = 3; # number of resources we want the solver solves for each instance of the graphs specified in graphs
+k = 4; # number of resources we want the solver solves for each instance of the graphs specified in graphs
 # complete description of each tag in our xml file (intermediate aggregate file)
 #
 # .. TO_DO
@@ -30,6 +30,8 @@ other_tags = list(['K', 'PATH', 'COVERED', 'LOST', 'HISTORY', 'UTILITY', 'EXEC_T
 
 aggregate_filepath = "C:\\Users\\Ga\\Desktop\\"; # filepath to the aggregate (.dat) file
 aggregate_output = "aggregate.dat"; # name of the aggregate file
+aggregate_prefix = ['NAME', 'TOPOLOGY', 'NUM_V', 'NUM_T', 'K', 'EXEC_TIME', 'UTILITY', 'LENGTH_EQ_PATH', 'AVG_LENGTH_PATH', 'DENSITY']; # prefix for the aggregate file: specifies each entry on that file
+
 
 #==============================================================================
 # function that invokes pathfinder for a given specification of the SAAP game (Graph, initial vertex, initial target)
@@ -60,7 +62,7 @@ def solveSAAP(filepath):
         g_tags[4].text = str(t);
         g_tags[5].text = str(len(vertices));
         g_tags[6].text = str(len(G.getTargets()));
-        g_tags[7].text = str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())));
+        g_tags[7].text = str(G.getDensity());
         g_tags[8].text = topology;
         # follow the order in other_tags to see what's the content of each of the following element
         o_tags[0].text = str(i+1);
@@ -72,8 +74,8 @@ def solveSAAP(filepath):
         o_tags[6].text = str(exec_time);
         o_tags[7].text = str(routes);
         tree = et.ElementTree(root);
-        files.append(output_path+"_topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str((sum(G.getAdjacencyMatrix())[0])/(2*len(G.getVertices())))+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
-        tree.write(files[-1]);
+        files.append(output_path+"_topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str(G.getDensity())+"_V0_"+str(v)+"_T0_"+str(t)+"_resources_"+str(i+1));
+        tree.write(files[-1]); # write on file
     return files;
 #==============================================================================
 # function that create a graph G from a file that specifies the adjacency matrix at first
@@ -183,22 +185,40 @@ def fromXml2Aggregate(filepath, filename):
         else:
             if root.find(i) != None:
                 result.append(root.find(i).text);
-    return result;
-    
+            else:
+                result.append('None');
+    return result;   
+#==============================================================================
+# function that creates from a graph specification a string that is used to feed the 
+#     function that create the aggregate file from the various xml instances of saaps
+#     takes as input
+#         file, which is the filename (filepath+filename)
+#     returns
+#         the filename of the xml file to be used to feed the aggregate file
+#==============================================================================
+def fromGraphToXmlName(file):
+    G, vertices, v, t, topology = createGraphFromFile(file); 
+    filename = "_topology_"+topology+"_vertices_"+str(len(G.getVertices()))+"_density_"+str(G.getDensity())+"_V0_"+str(v)+"_T0_"+str(t);
+    return filename;
     
 """
 Little testing to see if the algorithms work as expected
 """    
 verbose = True; # this variable controls whether the output is printed
 if verbose:
-    data_to_find = ['TOPOLOGY', 'NUM_V', 'NUM_T', 'K', 'EXEC_TIME', 'UTILITY', 'LENGTH_EQ_PATH', 'AVG_LENGTH_PATH', 'DENSITY'];
-    [printSaapDOM(i, True) for i in solveSAAP("C:\\Users\\Ga\\Desktop\\graph1.txt")];
-    f = open("aggregate.dat", "w");
-    prefix = str();
-    for i in data_to_find:
-        prefix += str(i)+'\t';
-    f.write(prefix + '\n');
+    # extract elements from the graph file
+    
+    [printSaapDOM(i, True) for i in solveSAAP(graphs_input_path + "graph1.txt")];    
+    if not(os.path.isfile(aggregate_filepath + aggregate_output)): # if the file does not exists, create it with the prefix
+        prefix = str();
+        for i in aggregate_prefix:
+            prefix += str(i)+'\t';
+        f = open(aggregate_filepath + aggregate_output, "w"); # create the file with the prefix
+        f.write(prefix + '\n');
+    else:
+        f = open(aggregate_filepath + aggregate_output, "a"); # open in appendix mode
+    # write all the results row by row, using the fromGraphToXmlName function as "feeder" to the fromXml2Aggregate function, plus the number of resources of a given instance
     for i in range(1,k+1):
-        line = fromXml2Aggregate('C:\\Users\\Ga\\Desktop\\', '_topology_graph_vertices_5_density_0.4_V0_2_T0_0_resources_'+str(i));
-        f.write(str(line)+'\n');
-    f.close();
+        line = fromXml2Aggregate(graphs_input_path, fromGraphToXmlName(graphs_input_path + "graph1.txt")+"_resources_"+str(i));
+        f.write(str(line)+'\n');        
+    f.close(); # close the file

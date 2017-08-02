@@ -13,9 +13,11 @@ We can pass the xml output to solvesaap.py that solves the game ok k sequencial 
 """
 import numpy as np
 import xml.etree.ElementTree as et
+import graph as gr
+import shortestpath as sp
 
-graphs_output_path = "C:\\Users\\Ga\\Desktop\\"; # path to put the graphs' description
-graph_tags = list(['G','A', 'V', 'V0', 'T0', 'TOPOLOGY']);
+graphs_output_path = "C:\\Users\\Ga\\Desktop\\instances\\test\\"; # path to put the graphs' description
+graph_tags = list(['G', 'A', 'V', 'DENSITY', 'TOPOLOGY']); # tags that we expect in a graph specification file
 
 #==============================================================================
 # function that creates random criques (wrt the vertices type)
@@ -38,9 +40,9 @@ def generateRandomCrique(n, p, min_value, max_value, min_deadline, max_deadline)
 # create a file that can be used to start a saap instance with the solvesaap.py module 
 #   outputfile is the output filename(path plus filename) where the graph is put in xml format
 #==============================================================================
-def createFileFromGraph(adj, vertices, v, t, topology, outputfile):
+def createFileFromGraph(adj, vertices, density, topology, outputfile):
         g_tags = list();
-        list_of_DOM = list([adj, vertices, v, t, topology]);
+        list_of_DOM = list([adj, vertices, density, topology]);
         g_tags.append(et.Element("G"));
         #g_tags.append(et.SubElement(root, graph_tags[0])); # G (graph) is the first child node of ROOT
         for j in range(1,len(graph_tags)):
@@ -48,29 +50,6 @@ def createFileFromGraph(adj, vertices, v, t, topology, outputfile):
             g_tags[j].text = str(list_of_DOM[j-1]);
         tree = et.ElementTree(g_tags[0]);
         tree.write(outputfile);
-#==============================================================================
-#  function that generates a random graph that is connected (i.e. from every vertex
-#  it is possible to reach any other vertex on the graph) and that has a certain number of 
-#  vertices (num_vertices) and a specified initial density (density), i.e. the average number of
-#  arcs per vertex
-#  it takes as input
-#    num_vertices which is the number of vertices we want our graph is composed to
-#    density which is the average number of arcs per vertex
-#  it returns
-#    the adjacency matrix of our conncted graph
-#==============================================================================
-def generateRandConnectedGraph(num_vertices, density):
-    return;
-#==============================================================================
-# recursive function that says if a given vertex is connected to another one (not directly):
-# takes as input 
-#    the vertex n from where we are checking the connectivity
-#    the vertex v we want to test the connectivity
-#    the adjacency matrix A
-# return True if there's a path between the two nodes, False otherwise    
-#==============================================================================
-def isConnected(n, v, A):
-    return False;
 #==============================================================================
 # function that generates a random adjacency matrix with the following input
 #  n is the size of the matrix
@@ -100,10 +79,35 @@ def returnAdjacents(v):
             np.append(res, i);
     return res;
     
-"""Test part """
+"""Test part 
+Use this snippet of code to generate n instances of random graphs with a desired connectivity
+in the loop you specify how many instances you want
+then you specify the parameters of the graph (number of nodes each, probability that a node is a target etc.)
+"""
 verbose = True;
 if verbose:
-    # generate graph info that can be passed to the createFileFromGraph function
-    crique, vertices = generateRandomCrique(5, 0.3, 0.1, 1, 2, 10); # create the graph instance
-    # print(crique, vertices);
-    createFileFromGraph(crique, vertices, 0, 0, "crique", str("C:\\Users\\Ga\\Desktop\\bisco"));
+    edgedensity = 0.1; # edge density
+    ptarget = 1; # probability that a vertex is a target
+    for i in range(10,30,10):
+        ptarget = 1;
+        # generate graph info that can be passed to the createFileFromGraph function
+        G = gr.generateRandomGraph(generateRandMatrix(i, 0.1), i, ptarget, 0,20); # generate the graph
+        # connect the graph and increase the connectivity
+        n = np.size(G.getAdjacencyMatrix()[0]);
+        SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
+        connected_adj = gr.fromSpToAdjacency(sp.connectMatrix(SP_cost));
+        for l in range(np.shape(connected_adj)[0]):
+            G.setAdjacents(G.getVertex(l), connected_adj[l]);        
+        increased_adj = gr.increaseEdgeDensity(connected_adj, edgedensity); # put here the desired edge density
+        for l in range(np.shape(increased_adj)[0]):
+            G.setAdjacents(G.getVertex(l), increased_adj[l]);
+        SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
+        diameter = np.matrix.max(SP_cost).astype(int);
+        G.setAllDeadlines(diameter, (2*diameter)+1); # set all the deadlines between diamter and two times the diameter
+        # now it should be connected
+        vertices = list();
+        for j in G.getVertices():
+            vertices.append([j.isTarget(), j.getValue(), j.getDeadline()]); # create the graph instance
+        parsedAdjMatrix = list([list(i) for i in gr.fromSpToAdjacency(G.getAdjacencyMatrix())]); # we need to parse it to put in on file
+        createFileFromGraph(parsedAdjMatrix, vertices, G.getDensity(), "random", graphs_output_path+"topology_"+"random"+"_vertices_"+str(i)+"_targets_"+str(len(G.getTargets()))+"_density_"+str(G.getDensity())+"_minvalue_0.1_maxvalue_1_mindeadline_1_maxdeadline_"+str(i));
+        print(SP_cost);

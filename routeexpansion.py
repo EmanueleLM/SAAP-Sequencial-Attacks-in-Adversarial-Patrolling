@@ -109,7 +109,7 @@ class RouteExpansion3(RouteExpansion):
 #     calculate the expired targets on G, given a route and its history of attacks
 #     takes as input:
 #      the graph G
-#      the position v where D is at time j
+#      the vertex v where D is at time j
 #      the time passed j since the beginning of the game
 #     it returns:
 #      the list of expired targets
@@ -124,7 +124,7 @@ class RouteExpansion3(RouteExpansion):
             for t in el[0]:
                 condition1 = t not in r_new_route_si[el[1]:(el[1]+G.getVertex(t).getDeadline()+1)]; # the target has not been covered
                 condition2 = j-el[1] > G.getVertex(t).getDeadline() or (j-el[1] >= G.getVertex(t).getDeadline() and r_new_route_si[-1]!=t); # there's no time to cover it anymore
-                condition3 = t not in expired_targets; # once it has expired, it is done                
+                condition3 = t not in expired_targets; # once it has expired, it is done (redundant since we return a numpy.unique element, but it's ok)               
                 if condition1 and condition2 and condition3: #if t is covered in the window where it can be covered
                      expired_targets = np.append(expired_targets, t);
         return np.unique(expired_targets.astype(int));
@@ -147,7 +147,7 @@ class RouteExpansion3(RouteExpansion):
         print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.expiredTargetsAtTheEnd(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
         print("=====================================");
 #==============================================================================
-#       function that calculates if two routes has the same history
+#       function that calculates if two routes have the same history
 #        it takes as input:
 #           route, which is the route whose hisotry is compared to the one that invokes this function
 #        it returns:
@@ -163,6 +163,7 @@ class RouteExpansion3(RouteExpansion):
                     if not(np.array_equal(np.sort(self.history[n][0]), np.sort(route.history[n][0]))):
                         return False;
         return True;
+#   function that retruns True if two routes are equal, False otherwise
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
 #   function for distinguish between two vertices
@@ -186,6 +187,7 @@ class RouteExpansion3(RouteExpansion):
 #  the number of resources available to A at the beginning of the game, k    
 #==============================================================================
 def printDPMatrix(M, k, G):
+    routes = list([]); # list with all the routes, used for data aggregation purposes
     for l in range(np.shape(M)[0]):
         for i in range(np.shape(M)[1]):
             for j in range(np.shape(M)[2]):
@@ -196,5 +198,6 @@ def printDPMatrix(M, k, G):
                         if r.isNone():
                             continue;
                         elif (r.attacksLeft(k) == 0):
-                            r.printRouteExpansion(G);
-    
+                            r.printRouteExpansion(G);      
+                            routes.append([np.append(r.getRoute_si(), r.getRoute_ij()[1:]), r.getUtility(), r.getCoveredTargets(), r.getHistory()]);
+    return routes;

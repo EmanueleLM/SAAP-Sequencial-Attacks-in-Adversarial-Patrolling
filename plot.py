@@ -98,7 +98,7 @@ Little testing to see if the algorithms work as expected
 """    
 verbose = True; # this variable controls whether the output is printed
 if verbose:
-    plotExecTimeByNumberOfNodes(3);
+    #plotExecTimeByNumberOfNodes(3);
     plotExecTimeByNumberOfResources();
-    plotUtilityByDensity(0,10,0,10);
+    #plotUtilityByDensity(0,10,0,10);
     

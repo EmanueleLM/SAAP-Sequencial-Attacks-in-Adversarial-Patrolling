@@ -144,7 +144,8 @@ def PathFinder(G, v, t, k):
                             M[l_new][v1][j+1] = list([re.RouteExpansion3(np.append(r.getRoute_si(),v1), np.array([]), utility, covered, r.getHistory())]);#expand the new route calculating all the new elements inside it     
 
     # extract the utilities of the game
-    # then terminate  
+    # then terminate 
+    print("Elements at the equilibrium ", extractUtility(M, k+1));
     return re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
 
 #==============================================================================
@@ -194,32 +195,34 @@ def extractUtility(M, k):
     histories = list(); # list with every possible attack by A, they are not-in-order, but we do not care, we copare them with the historyEqual function of RouteExpansion3
     utilitydef = np.array([]); # array of floats that contains at the same index of histories, the respective utility
     paths = list(); # same as utilitydef but with the repsective equilibrium path
-    for j in np.shape(M)[0]:
-        for l in np.shape(M)[1]:
-            for i in np.shape(M)[2]:
+    for j in range(np.shape(M)[2]):
+        for l in range(np.shape(M)[0]):
+            for i in range(np.shape(M)[1]):
                 if M[l][i][j] == None:
                     continue;
                 for r in M[l][i][j]: # for each route that is final, find the best reply to each possible attack of A(i.e. histories of D)
-                    if r.attackLeft(k) == 0:
+                    if r.attacksLeft(k) == 0:
                         isEqual = False;
                         n = 0; # var that control the indices on the hisotries and utilitydef (useless declaration but makes the code clear since we will use n as index)
                         for n in range(len(histories)):
-                            if r.historyEqual(histories[n]):
+                            temproute = re.RouteExpansion3(np.array([]), np.array([]), 0, np.array([]), histories[n]);
+                            if r.historyEqual(temproute):
                                 isEqual = True;
                                 break;
                         if isEqual:
                             if r.getUtility() > utilitydef[n]: # max for D w.r.t. the utility, greater is to speedup the function (whats the point of substituting an equilibrium path with another one?)
                                 utilitydef[n] = r.getUtility();
-                                paths.append(list[r.getRoute_si()[-1],r.getRoute_ij()]);
+                                paths.append(list([r.getRoute_si()[-1],r.getRoute_ij()]));
                         else: # if the attack is not present in the list, add it, we will compare it from now on to the ones that are equal (with RouteExpansion3.historyEqual() function)
                             histories.append(r.getHistory());
-                            utilitydef.append(r.getUtility());
-                            paths.append(list[r.getRoute_si()[-1],r.getRoute_ij()]);
+                            utilitydef = np.append(utilitydef, r.getUtility());
+                            paths.append(list([r.getRoute_si()[-1],r.getRoute_ij()]));
     # min for A w.r.t. the utility
     if len(histories) > 0:
         utility = min(utilitydef);
-        history_at_equilibrium = histories[utilitydef.index(utility)];
-        route_at_the_equilibrium = paths[utilitydef.index(utility)];
+        index = np.where(utilitydef==utility)[0][0];
+        history_at_equilibrium = histories[index];
+        route_at_the_equilibrium = paths[index];
         return utility, route_at_the_equilibrium, history_at_equilibrium;    
     else:
         print("A did not attack in this game :P\n");
@@ -228,7 +231,7 @@ def extractUtility(M, k):
 """
 Little testing to see if the algorithms work as expected
 """    
-verbose = False; # this variable controls whether the output is printed
+verbose = True; # this variable controls whether the output is printed
 if verbose:
     print("\nStart PathFinder Test Part::");          
     v1 = gr.Vertex(1,0.6,2);

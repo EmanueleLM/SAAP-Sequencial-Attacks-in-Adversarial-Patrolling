@@ -140,14 +140,13 @@ def PathFinder(G, v, t, k):
                                        break;
                                    else:
                                        break;
+                           M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), np.array([]), utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it                                
                         else:
                             M[l_new][v1][j+1] = list([re.RouteExpansion3(np.append(r.getRoute_si(),v1), np.array([]), utility, covered, r.getHistory())]);#expand the new route calculating all the new elements inside it     
-
     # extract the utilities of the game
-    # then terminate 
-    print("Elements at the equilibrium ", extractUtility(M, k+1));
-    return re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
-
+    # then terminate    
+    #re.printDPMatrix(M, k+1, G); #print layers where the number of resources left to A is 0, se the game is ended    
+    return print(extractUtility(M, k+1));
 #==============================================================================
 # function that returns, given a cell of the dp matrix, only the routes that are not dominated by other routes
 #     takes as input:
@@ -175,7 +174,6 @@ def checkDominance(M, i, j, l):
             M_temp.append(M[l][i][j][n]);
     #print(len(deleted));
     return M_temp; 
-
 #==============================================================================
 # function that returns the utility and the route at the equilibrium: 
 #  takes as input:
@@ -212,11 +210,11 @@ def extractUtility(M, k):
                         if isEqual:
                             if r.getUtility() > utilitydef[n]: # max for D w.r.t. the utility, greater is to speedup the function (whats the point of substituting an equilibrium path with another one?)
                                 utilitydef[n] = r.getUtility();
-                                paths.append(list([r.getRoute_si()[-1],r.getRoute_ij()]));
+                                paths.append(np.append(r.getRoute_si(), r.getRoute_ij()[1:]));
                         else: # if the attack is not present in the list, add it, we will compare it from now on to the ones that are equal (with RouteExpansion3.historyEqual() function)
                             histories.append(r.getHistory());
                             utilitydef = np.append(utilitydef, r.getUtility());
-                            paths.append(list([r.getRoute_si()[-1],r.getRoute_ij()]));
+                            paths.append(np.append(r.getRoute_si(), r.getRoute_ij()[1:]));
     # min for A w.r.t. the utility
     if len(histories) > 0:
         utility = min(utilitydef);
@@ -246,7 +244,7 @@ if verbose:
   
     initial_vertex = 1;
     initial_target = 2; # extract the index number of the first target (if no targets, the program will end up with an error, anyhow the graph is not interesting for attacks and sequencial attacks, right?)
-    for i in range(0,5):
+    for i in range(2,3):
         start_time = time.time();
         PathFinder(G, initial_vertex, initial_target, i);
         print("Instance with k= ", i+1);

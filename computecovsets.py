@@ -21,8 +21,6 @@ import numpy as np
 import graph as gr
 import btree as bt
 import shortestpath as sp
-import copy as cp
-
 
 #==============================================================================
 #computeCovSets function calculates the covering routes on a Graph

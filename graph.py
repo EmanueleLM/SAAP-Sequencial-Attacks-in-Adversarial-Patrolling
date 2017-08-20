@@ -113,6 +113,7 @@ class Graph(object):
         self.vertices = np.append(self.vertices,v);
         #give to each vertex a unique number
         v.setVertexNumber = len(self.vertices)-1;
+        
 #==============================================================================
 #     uses a binary vector to set the adjacents' vertices (can be used with the adjacency matrix)
 #     takes as input the vertex, and adj_vertices, a binary vector of size |V|
@@ -127,6 +128,7 @@ class Graph(object):
             i+=1;
         vertex.adjacents.sort();
         return vertex.adjacents; 
+        
 #==============================================================================
 #     return the adjacency matrix
 #     it assign a value of 1 if two vertices are directly connected, inf otherwise
@@ -144,6 +146,7 @@ class Graph(object):
                 else:
                     A[i.vertex_number][j] = inf;
         return A;
+        
 #   function that returns all the targets indices in G
     def getTargets(self):
         T = np.array([]);
@@ -151,9 +154,10 @@ class Graph(object):
             if v.is_target:
                 T = np.append(T,v.vertex_number);
         return T.astype(int);
+        
 #==============================================================================
 # function that returns the density of a given graps as average number of arcs per node   
-# the number of edges is drawn from a normal distribution with mean, said edge density and defined as epsilon = 2E/T*(T−1)
+#   the number of edges is drawn from a normal distribution with mean, said edge density and defined as epsilon = 2E/T*(T−1)
 #==============================================================================
     def getDensity(self):
         tot = 0;
@@ -172,6 +176,7 @@ class Graph(object):
     def setAllDeadlines(self, min_deadline, max_deadline):
         for v in self.getTargets():
             self.getVertex(v).setDeadline(np.random.randint(min_deadline, max_deadline));
+            
 #==============================================================================
 # function that generates a random adjacency (0,1) matrix with the following input
 #  n is the size of the matrix
@@ -191,6 +196,7 @@ def generateRandMatrix(n, p):
                 M[j][i] = 1;
         l += 1;
     return M;
+    
 #==============================================================================
 # function that creates a graph that is composed by n vertices whose values is between (0,1] 
 # and whose deadline is uniformely distributed between 1 and max_deadline
@@ -218,11 +224,13 @@ def generateRandomGraph(M, n, p, min_deadline, max_deadline):
     for i in range(n):
         G.setAdjacents(vertices[i], M[i]);
     return G;    
+    
 # function that returns the shortest path cost between two nodes        
 def getShortestPath(G, i, j):
     n = np.size(G.getAdjacencyMatrix()[0]);
     SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
-    return int(SP_cost.item(i,j));    
+    return int(SP_cost.item(i,j));   
+    
 #==============================================================================
 # function that returns the diameter of a graph, as the longest of the shortest paths on G
 # takes as input
@@ -234,6 +242,7 @@ def getDiameter(G):
     n = np.size(G.getAdjacencyMatrix()[0]);
     SP, SP_cost = np.array(sp.shortest_path(G.getAdjacencyMatrix(),n,n));
     return np.matrix.max(SP_cost).astype(int);   
+    
 #==============================================================================
 # function that transforms a shortest path matrix into an adjacency matrix
 # takes as input
@@ -268,7 +277,7 @@ def increaseEdgeDensity(adj, e):
     # 1.while density < e: 
     # 2.take random vertex, add an edge, if possible 
     # 3.goto 1
-    while abs(density-e)>=0.05 and density<e:
+    while density<e:
          # pickup a vertex randomly
         v = np.random.randint(n);
         for i in np.random.permutation(n): # if we permute the indices, we connect random disconnected elements!
@@ -279,8 +288,6 @@ def increaseEdgeDensity(adj, e):
                 density /= n*(n-1);
                 break;
     return adj;
-            
-    
     
 """
 Little testing to see if the algorithms work as expected

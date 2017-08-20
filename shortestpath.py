@@ -7,6 +7,7 @@ Created on Fri Apr  7 11:49:43 2017
 Algorithm that calculates shortest paths (both costs and relative paths)
 between every pair of nodes in a graph
 """
+
 import numpy as np
 import networkx as nx
 
@@ -26,6 +27,7 @@ def shortest_path(matrix,m,n):
     SP_cost = nx.floyd_warshall_numpy(H);
     SP = nx.shortest_path(H);
     return [SP,SP_cost];   
+    
 #==============================================================================
 # function that connects a matrix which entries are the shortest paths between vertices
 # takes as input 
@@ -46,7 +48,7 @@ def connectMatrix(M):
     elif np.inf in M:
         inf = np.inf;
     while inf in M:
-        for i in n:
+        for i in np.random.permutation(n):
             if M[counter,i]== inf:
                 M[counter,i]=M[i,counter]=1;
                 for p in n:

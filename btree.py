@@ -11,7 +11,6 @@ Rise up this mornin', Smiled with the risin' sun, 'Tree' little birds. Pitch by 
 
 import numpy as np;
 
-
 #==============================================================================
 # class Node that defines the nodes in the binary tree
 # it hase the following attributes
@@ -52,8 +51,8 @@ class Node(object):
     def setHeight(self, height):
         self.height = height;
     def setIsLeaf(self, isleaf):
-        self.isleaf = isleaf;
-    
+        self.isleaf = isleaf;    
+        
 #==============================================================================
 # class that defines the binary tree 
 #  it has as elements a root which is the root of the tree (it corresponds to a "virtual" vertex on G where the cost 
@@ -68,6 +67,7 @@ class BTree(object):
         self.SP_cost = np.array(SP);
     def getRootNode(self):
         return self.root;
+        
 #==============================================================================
 #     search in the tree if the route v we have found has a cost which
 #     is higher than one which is present in the tree, returns 1, 0 otherwise
@@ -94,6 +94,7 @@ class BTree(object):
             return True;
         else:
             return False;
+            
 #==============================================================================
 #     update function: it updates the btree used to store the routes    
 #     we go down through the tree and update a route
@@ -131,7 +132,7 @@ class BTree(object):
                 node.isleaf = False;
                 return self.update(route, targets[1:], node.left, v[1:],oldroute);
             else:# in this case a route that does not cover a target already exists (but for sure that route will cover at most another target which comes after in T)
-                return self.update(route, targets[1:], node.left,v[1:],oldroute);                
+                return self.update(route, targets[1:], node.left,v[1:],oldroute);  
                 
 #==============================================================================
 # transform a route into a binary vector where each entry v[i] is 1 if the corresponding
@@ -169,7 +170,7 @@ def purgeBinaryVector(v):
     else:
         temp = v[::-1].tolist().index(1);
         return v[:len(v)-temp]        
-            
+        
 #==============================================================================
 # #given a route as an ordered set of targets, calculate the cost of the shortest path that covers all the target inside in it            
 #==============================================================================

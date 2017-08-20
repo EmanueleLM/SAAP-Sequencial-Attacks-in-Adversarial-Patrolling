@@ -11,7 +11,6 @@ the latter is an extension (thanks to inheritance) of the former that includes t
 "covered targets" and "history", seen as a way to encode the past attacks in the game
 """
 
-
 import numpy as np
 
 #==============================================================================
@@ -73,6 +72,7 @@ class RouteExpansion3(RouteExpansion):
         super(RouteExpansion3, self).__init__(route_si, route_ij, u_ij);
         self.covered_targets = covered_targets.astype(int);
         self.history = history;
+        
 #==============================================================================
 #     def expandRoute(self, route_si, route_ij, u_ij, covered_targets, history):
 #         super(RouteExpansion3, self).expandRoute(route_si, route_ij, u_ij);
@@ -87,6 +87,7 @@ class RouteExpansion3(RouteExpansion):
         self.covered_targets = covered_targets.astype(int);
     def setHistory(self, history):
         self.history = history;
+        
 #==============================================================================
 #   function that calculates the targets under attack using the history element
 #   takes as input:
@@ -105,6 +106,7 @@ class RouteExpansion3(RouteExpansion):
                 if condition1 and condition2: # a target is under attack if it has not expired or it has been covered in due time
                     targets_under_attack = np.append(targets_under_attack,t);
         return np.unique(targets_under_attack).astype(int);
+        
 #==============================================================================
 #     calculate the expired targets on G, given a route and its history of attacks
 #     takes as input:
@@ -116,7 +118,7 @@ class RouteExpansion3(RouteExpansion):
 #==============================================================================
     def calculateExpiredTargets(self, G, v, j):
         expired_targets = np.array([]);
-        if v != None:
+        if v is not None:
             r_new_route_si = np.append(self.route_si, v);
         else:
             r_new_route_si = np.array(self.route_si);
@@ -128,6 +130,7 @@ class RouteExpansion3(RouteExpansion):
                 if condition1 and condition2 and condition3: #if t is covered in the window where it can be covered
                      expired_targets = np.append(expired_targets, t);
         return np.unique(expired_targets.astype(int));
+        
 #==============================================================================
 #     calculate the expired targets on G, at the end of the game, i.e. after the covering route has been created and followed by D
 #     takes as input:
@@ -140,12 +143,15 @@ class RouteExpansion3(RouteExpansion):
     def expiredTargetsAtTheEnd(self, G, v, j): 
         expired_targets = self.calculateExpiredTargets(G, v, j);
         targets_alive = self.getTargetsUnderAttack(G, j);
-        return np.append(expired_targets, np.setdiff1d(targets_alive, self.route_ij[1:]));
+        return np.unique(np.append(expired_targets, np.setdiff1d(targets_alive, self.route_ij)));
+        
 #   function that prints the values of the element RouteExpansion3
     def printRouteExpansion(self, G):
         print("=====================================");
-        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.expiredTargetsAtTheEnd(G,None,self.history[-1][1]),"\nHistory: ", self.history);        
+        print("Route_si: ", self.route_si, " \nRoute_ij: ", self.route_ij, " \nUtility: ", self.u_ij, "\nCovered Targets: ", self.covered_targets, "\nExpired Targets:", self.expiredTargetsAtTheEnd(G,None,5000),"\nHistory: ", self.history);        
         print("=====================================");
+        return self.route_si, self.route_ij, self.u_ij, self.history;
+        
 #==============================================================================
 #       function that calculates if two routes have the same history
 #        it takes as input:
@@ -160,18 +166,21 @@ class RouteExpansion3(RouteExpansion):
                 if self.history[n][1] != route.history[n][1]:
                     return False;
                 else:
-                    if not(np.array_equal(np.sort(self.history[n][0]), np.sort(route.history[n][0]))):
+                    if not(np.array_equal(np.sort(self.history[n][0]).astype(int), np.sort(route.history[n][0]).astype(int))):
                         return False;
         return True;
+        
 #   function that retruns True if two routes are equal, False otherwise
     def __eq__(self, x):
         return np.array_equal(np.sort(self.getRoute_si),np.sort(x.route_si)) and np.array_equal(np.sort(self.getRoute_ij),np.sort(x.route_ij)) and np.array_equal(np.sort(self.covered_targets), np.sort(x.covered_targets) and np.array_equal(np.sort(self.getTargetsUnderAttack()), np.sort(x.getTargetsUnderAttack()))); #we suppose that two routes are equivalent if they contains the same elements, in the same order (we don't care about utility)            
+
 #   function for distinguish between two vertices
     def __ne__(self, x):
         return not(self.__eq__(x));
 #   make the object iterable in a loop (i.e. for loops)
     def __iter__(self):
         return self;
+
 #   function that calculates the number of attacks left to A for a given route (i.e. a given game's scenario)
     def attacksLeft(self, k):
         attacks = 0;
@@ -179,25 +188,69 @@ class RouteExpansion3(RouteExpansion):
             for t in h[0]:
                 attacks += 1;
         return k-attacks;
+        
+#   function that returns True if the history of a route has repeated elements, False otherwise
+    def repeatedAttacks(self):
+        attacks = np.array([]);
+        for n in range(len(self.history)):
+            for t in self.history[n][0]:
+                attacks = np.append(attacks, t);
+        return len(attacks) != len(np.unique(attacks));
+        
 #==============================================================================
 # function that prints the elements of the dp matrix that are terminals i.e. cannot be expanded anymore 
 # and represents a game that is ended 
 # it takes as input:
 #  the matrix M of dp
-#  the number of resources available to A at the beginning of the game, k    
+#  the number of resources available to A at the beginning of the game, k
+#  the graph G
 #==============================================================================
 def printDPMatrix(M, k, G):
     routes = list([]); # list with all the routes, used for data aggregation purposes
+    #temp = RouteExpansion3(None, None, 0, np.array([]), list([[np.array([1]), 0], [np.array([0]), 1]]));
     for l in range(np.shape(M)[0]):
         for i in range(np.shape(M)[1]):
             for j in range(np.shape(M)[2]):
-                if M[l][i][j] == None:
+                if M[l][i][j] is None:
                     continue;
                 else:
                     for r in M[l][i][j]:
                         if r.isNone():
                             continue;
-                        elif (r.attacksLeft(k) == 0):
+                        elif (r.attacksLeft(k) == 0) and (r.getRoute_ij() is not None): # do not use routes that have not solved SRGV!
+                            print(i,j,l);                            
                             r.printRouteExpansion(G);      
+                            if r.getRoute_ij() is None: # do not use routes that have not solved SRGV!
+                                pass;                                
+                                #routes.append([np.append(r.getRoute_si(), np.array([])), r.getUtility(), r.getCoveredTargets(), r.getHistory()]);
+                            else:
+                                routes.append([np.append(r.getRoute_si(), r.getRoute_ij()[1:]), r.getUtility(), r.getCoveredTargets(), r.getHistory()]);
+    return routes;
+    
+#==============================================================================
+# function that prints out a single slice of the dp matrix M  
+# it takes as input:
+#  the matrix slice M[j] of dp
+#  the number of resources available to A at the beginning of the game, k  
+#  the graph G
+#==============================================================================
+def printDPSlice(M, j, k, G):
+    routes = list([]); # list with all the routes, used for data aggregation purposes
+    #temp = RouteExpansion3(None, None, 0, np.array([]), list([[np.array([1]), 0], [np.array([3]), 1],[np.array([1]), 2]]));
+    for l in range(np.shape(M)[0]):
+        for i in range(np.shape(M)[1]):    
+            if M[l][i][j] is None:
+                continue;
+            else:
+                for r in M[l][i][j]:
+                    if r.isNone():
+                        continue;
+                    elif (r.attacksLeft(k) == 0) and (r.getRoute_ij() is not None): # do not use routes that have not solved SRGV!
+                        print(i,j,l);                            
+                        r.printRouteExpansion(G);      
+                        if r.getRoute_ij() is None: # do not use routes that have not solved SRGV!
+                            pass;                                
+                            #routes.append([np.append(r.getRoute_si(), np.array([])), r.getUtility(), r.getCoveredTargets(), r.getHistory()]);
+                        else:
                             routes.append([np.append(r.getRoute_si(), r.getRoute_ij()[1:]), r.getUtility(), r.getCoveredTargets(), r.getHistory()]);
     return routes;

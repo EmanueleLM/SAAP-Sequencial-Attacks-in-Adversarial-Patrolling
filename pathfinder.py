@@ -87,7 +87,7 @@ def PathFinder(G, v, t, k):
     M[0][v][0] = list([re.RouteExpansion3(np.array([v]), None, 0, np.array([v]) if v==t else np.array([]), list([[np.array([t]).astype(int),0]]))]);
     stopping_layers = np.array([target_dictionary[i] for i in target_dictionary if len(i.split())==k+1]); # put in the indices of all the layers of cardinality k, i.e. we use this array to check if a route cannot expanded anymore (this is a sufficient condition, not necessary since we can have repetaed attacks on the same target)   
     # we 'populate' the matrix M by columns and then with an in-depth approach wrt the third layer l    
-    for j in range(k*(n)):        
+    for j in range(k*n):        
         for l in range(len(target_dictionary)): # associate to each of the matrix M a set of covered targets over the parts of (|T| k) possible targets with k resources
             if l in stopping_layers: # we don't expand layer that are final (all targets expired). please note that a layer in final is not expanded, but not all terminal routes will be on terminal layers (e.g. A attacks twice the same target)
                 continue;
@@ -129,7 +129,7 @@ def PathFinder(G, v, t, k):
                                     tobeeliminated = np.append(tobeeliminated, index1);
                         index2 += 1;
                     index1 += 1;
-                M[l][i][j] = np.delete(M[l][i][j], tobeeliminated);
+                M[l][i][j] = np.ndarray.tolist(np.delete(M[l][i][j], tobeeliminated));
                 # end repeated routes' elimination
                     
                 adjacentvertices =  np.array(G.getVertex(i).getAdjacents()); # calculate adjacent vertices to vertex i on G
@@ -156,9 +156,9 @@ def PathFinder(G, v, t, k):
                                 condition1 = r.historyEqual(M[l_new][v1][j+1][r_next_layer]); # np.array_equal(np.setdiff1d(r.getTargetsUnderAttack(G, j), r.getCoveredTargets()), np.setdiff1d(r_next_layer.getTargetsUnderAttack(G, j+1), r_next_layer.getCoveredTargets())); #left condition on third layer if some tareget is expired on the next step!
                                 if condition1: # and v1 in np.setdiff1d(r.getTargetsUnderAttack(G, j), r.getCoveredTargets()):                              
                                     skip = False;                                    
-                                    condition2 = utility > M[l_new][v1][j+1][r_next_layer].getUtility();  
+                                    condition2 = utility <= M[l_new][v1][j+1][r_next_layer].getUtility();  
                                     if condition2:
-                                        M[l_new][v1][j+1] = np.delete(M[l_new][v1][j+1], r_next_layer);
+                                        M[l_new][v1][j+1] = np.ndarray.tolist(np.delete(M[l_new][v1][j+1], r_next_layer));
                                         M[l_new][v1][j+1].append(re.RouteExpansion3(np.append(r.getRoute_si(),v1), np.array([]), utility, covered, r.getHistory()));#expand the new route calculating all the new elements inside it                                
                                         break;
                                     else:
@@ -183,9 +183,10 @@ def PathFinder(G, v, t, k):
                         if M[l][i][j-1][r].attacksLeft(k+1)!=0:
                             tobepurged = np.append(tobepurged, r);
                     #print(len( M[l][i][j-1])-len(tobepurged));
-                    M[l][i][j-1] = np.delete(M[l][i][j-1], tobepurged);
+                    M[l][i][j-1] = np.ndarray.tolist(np.delete(M[l][i][j-1], tobepurged));
                     if len(M[l][i][j-1])==0:
                         M[l][i][j-1] = None;
+            
                           
     # extract the utilities of the game
     # then terminate    
@@ -335,24 +336,18 @@ verbose = False; # this variable controls whether the output is printed
 if verbose:
     print("\nStart PathFinder Test Part::");   
        
-    v1 = gr.Vertex(0,0,0);
+    v1 = gr.Vertex(1,0.6,4);
     v2 = gr.Vertex(0,0,0);
-    v3 = gr.Vertex(1,0.6,4);
-    v4 = gr.Vertex(1,0.7,4);
-    v5 = gr.Vertex(1,0.8,1);
-    v6 = gr.Vertex(0,0,0);
-    v7 = gr.Vertex(0,0,0);
-    v8 = gr.Vertex(1,0.7,3);
+    v3 = gr.Vertex(0,0,0);
+    v4 = gr.Vertex(0,0,0);
+    v5 = gr.Vertex(1,0.7,4);
 
-    G = gr.Graph(np.array([v1,v2,v3,v4,v5,v6,v7,v8]));
-    G.setAdjacents(v1,np.array([1,1,0,0,0,1,0,0]));
-    G.setAdjacents(v2,np.array([1,1,1,1,1,1,0,0]));
-    G.setAdjacents(v3,np.array([0,1,1,1,0,0,1,1]));
-    G.setAdjacents(v4,np.array([0,1,1,1,0,0,0,0]));
-    G.setAdjacents(v5,np.array([0,1,0,0,1,0,0,0]));
-    G.setAdjacents(v6,np.array([1,1,0,0,0,1,0,0]));
-    G.setAdjacents(v7,np.array([0,0,1,0,0,0,1,0]));
-    G.setAdjacents(v8,np.array([0,0,1,0,0,0,0,1]));
+    G = gr.Graph(np.array([v1,v2,v3,v4,v5]));
+    G.setAdjacents(v1,np.array([1,1,0,0,0]));
+    G.setAdjacents(v2,np.array([1,1,1,0,0]));
+    G.setAdjacents(v3,np.array([0,1,1,1,0]));
+    G.setAdjacents(v4,np.array([0,0,1,1,1]));
+    G.setAdjacents(v5,np.array([0,0,0,1,1]));
 
   
     equilibrium_route = list();
@@ -366,7 +361,7 @@ if verbose:
         partial_route = list();
         for t in G.getTargets():
             partial_time = time.time();
-            u, route, hist = PathFinder(G, v, t, 2); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
+            u, route, hist = PathFinder(G, v, t, 1); # solve the game for a specific instance with a given number of resources 'k' for the Attacker
             print(u, route, hist);    
             print("Partial time for a (v,t) processing: ", (time.time() - partial_time));
             if u < partial_utility: # if a given instance is "pejorative(???)" A chooses that instance
